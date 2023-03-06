@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+import { Box } from "@chakra-ui/react";
 import { redoDepth, undoDepth } from "@codemirror/commands";
 import { EditorSelection, EditorState, Extension } from "@codemirror/state";
 import {
@@ -27,6 +28,7 @@ import {
   CodeStructureOption,
   ParameterHelpOption,
 } from "../../settings/settings";
+import SomeThing from "../../SomeThing";
 import { WorkbenchSelection } from "../../workbench/use-selection";
 import {
   EditorActions,
@@ -40,6 +42,7 @@ import { languageServer } from "./language-server/view";
 import { lintGutter } from "./lint/lint";
 import { codeStructure } from "./structure-highlighting";
 import themeExtensions from "./themeExtensions";
+import { testPlugin } from "./Widget";
 
 interface CodeMirrorProps {
   className?: string;
@@ -118,6 +121,7 @@ const CodeMirror = ({
         extensions: [
           notify,
           editorConfig,
+          testPlugin(),
           // Extension requires external state.
           dndSupport({ sessionSettings, setSessionSettings }),
           // Extensions only relevant for editing:
@@ -260,13 +264,18 @@ const CodeMirror = ({
   }, [routerState, setRouterState]);
 
   return (
-    <section
-      data-testid="editor"
-      aria-label={intl.formatMessage({ id: "code-editor" })}
-      style={{ height: "100%" }}
-      className={className}
-      ref={elementRef}
-    />
+    <>
+      <section
+        data-testid="editor"
+        aria-label={intl.formatMessage({ id: "code-editor" })}
+        style={{ height: "100%" }}
+        className={className}
+        ref={elementRef}
+      />
+      <Box hidden>
+        <SomeThing />
+      </Box>
+    </>
   );
 };
 

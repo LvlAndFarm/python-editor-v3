@@ -29,14 +29,16 @@ const EditorContainer = ({ selection }: EditorContainerProps) => {
     !settings.allowEditingThirdPartyModules ? (
     <ModuleOverlay moduleData={fileInfo.moduleData} />
   ) : (
-    <Editor
-      defaultValue={fileInfo.initialValue}
-      selection={selection}
-      onChange={onFileChange}
-      fontSize={settings.fontSize}
-      codeStructureOption={settings.codeStructureHighlight}
-      parameterHelpOption={settings.parameterHelp}
-    />
+    <>
+      <Editor
+        defaultValue={fileInfo.initialValue}
+        selection={selection}
+        onChange={onFileChange}
+        fontSize={settings.fontSize}
+        codeStructureOption={settings.codeStructureHighlight}
+        parameterHelpOption={settings.parameterHelp}
+      />
+    </>
   );
 };
 
