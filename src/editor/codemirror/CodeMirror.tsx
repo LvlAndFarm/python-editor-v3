@@ -121,7 +121,7 @@ const CodeMirror = ({
         extensions: [
           notify,
           editorConfig,
-          testPlugin(),
+          testPlugin(domNode),
           // Extension requires external state.
           dndSupport({ sessionSettings, setSessionSettings }),
           // Extensions only relevant for editing:
@@ -263,6 +263,7 @@ const CodeMirror = ({
     };
   }, [routerState, setRouterState]);
 
+  const domNode = useRef<HTMLDivElement>(null);
   return (
     <>
       <section
@@ -273,7 +274,7 @@ const CodeMirror = ({
         ref={elementRef}
       />
       <Box hidden>
-        <SomeThing />
+        <SomeThing ref={domNode} />
       </Box>
     </>
   );

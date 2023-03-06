@@ -1,8 +1,8 @@
 import { Box, Button, Text } from "@chakra-ui/react";
-import { useCallback, useEffect } from "react";
+import React, { ForwardedRef, useCallback, useEffect } from "react";
 import { useSettings } from "./settings/settings";
 
-const SomeThing = () => {
+const SomeThing = React.forwardRef((_, ref: ForwardedRef<HTMLDivElement>) => {
   const [settings, setSettings] = useSettings();
   useEffect(() => {}, []);
   const handleClick = useCallback(() => {
@@ -12,11 +12,11 @@ const SomeThing = () => {
     });
   }, [settings, setSettings]);
   return (
-    <Box id="something">
+    <Box ref={ref}>
       <Text>Current lang: {settings.languageId}</Text>
       <Button onClick={handleClick}>Toggle language (en / fr)</Button>
     </Box>
   );
-};
+});
 
 export default SomeThing;
