@@ -1,4 +1,4 @@
-# micro:bit Python Editor V3
+# micro:bit Python Editor  :)
 
 This project is a web-based code editor that targets the [MicroPython](https://micropython.org) version of the [Python programming language](http://python.org/).
 
