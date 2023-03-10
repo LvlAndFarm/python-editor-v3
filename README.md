@@ -11,7 +11,6 @@ Try it out at https://python.microbit.org/
   <figcaption>The image shows the micro:bit-branded deployment</figcaption>  
 </figure>
 
-chjkl;lkjhgfd
 ## Previous versions
 
 For more background about how this editor relates to the original Python Editor project, see [this explanation](https://github.com/bbcmicrobit/PythonEditor/issues/391).
