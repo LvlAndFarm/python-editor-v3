@@ -1347,6 +1347,12 @@
       "value": "View, create, add and edit the files in your project"
     }
   ],
+  "interact-tab": [
+    {
+      "type": 0,
+      "value": "Playground"
+    }
+  ],
   "python-powered": [
     {
       "type": 0,

@@ -37,13 +37,16 @@ interface SimulatorProps {
   simFocus: boolean;
 }
 
-const Simulator = ({
-  shown,
-  onSimulatorHide,
-  showSimulatorButtonRef,
-  minWidth,
-  simFocus,
-}: SimulatorProps) => {
+interface SimulatorBoxProps {
+  reference: React.RefObject<HTMLIFrameElement>;
+  intl: IntlShape;
+}
+
+export const SimulatorBox = ({
+  reference,
+  intl
+}:SimulatorBoxProps) => {
+
   const production =
     "https://python-simulator.usermbit.org/v/0.1/simulator.html";
   const staging =
@@ -52,11 +55,37 @@ const Simulator = ({
   // For testing with sim branches:
   //const branch = "upgrade-mpy";
   //const url = `https://review-python-simulator.usermbit.org/${branch}/simulator.html`;
+  const [brand500] = useToken("colors", ["brand.500"]);
+  const simulatorTitle = intl.formatMessage({ id: "simulator-title" });
+  
+  return (
+    <AspectRatio ratio={191.27 / 155.77} width="100%">
+      <Box
+        ref={reference}
+        as="iframe"
+        src={`${url}?color=${encodeURIComponent(brand500)}`}
+        title={simulatorTitle}
+        name={simulatorTitle}
+        frameBorder="no"
+        scrolling="no"
+        allow="autoplay;microphone"
+        sandbox="allow-scripts allow-same-origin"
+      />
+    </AspectRatio>
+  )
+}
 
+const Simulator = ({
+  shown,
+  onSimulatorHide,
+  showSimulatorButtonRef,
+  minWidth,
+  simFocus,
+}: SimulatorProps) => {
+  
   const ref = useRef<HTMLIFrameElement>(null);
   const intl = useIntl();
   const logging = useLogging();
-  const simulatorTitle = intl.formatMessage({ id: "simulator-title" });
   const simulator = useRef(
     new SimulatorDeviceConnection(logging, () => {
       return ref.current;
@@ -75,7 +104,6 @@ const Simulator = ({
   const simControlsRef = useRef<HTMLDivElement>(null);
   const contentRect = useResizeObserverContentRect(simControlsRef);
   const simHeight = contentRect?.height ?? 0;
-  const [brand500] = useToken("colors", ["brand.500"]);
   const [running, setRunning] = useState<RunningStatus>(RunningStatus.STOPPED);
   const previouslyShown = usePrevious(shown);
 
@@ -116,19 +144,10 @@ const Simulator = ({
         </Flex>
         <VStack spacing={5} bg="gray.25" ref={simControlsRef}>
           <Box width="100%" pb={1} px={5} maxW="md" minW={minWidth}>
-            <AspectRatio ratio={191.27 / 155.77} width="100%">
-              <Box
-                ref={ref}
-                as="iframe"
-                src={`${url}?color=${encodeURIComponent(brand500)}`}
-                title={simulatorTitle}
-                name={simulatorTitle}
-                frameBorder="no"
-                scrolling="no"
-                allow="autoplay;microphone"
-                sandbox="allow-scripts allow-same-origin"
-              />
-            </AspectRatio>
+            <SimulatorBox
+              reference={ref}
+              intl={intl}
+            />
             <SimulatorActionBar
               as="section"
               aria-label={intl.formatMessage({ id: "simulator-actions" })}
