@@ -152,6 +152,7 @@ export class SimulatorDeviceConnection
       // Not an event for us.
       return;
     }
+    console.log(event)
     switch (event.data.kind) {
       case "ready": {
         this.state = event.data.state;
@@ -275,6 +276,10 @@ export class SimulatorDeviceConnection
     this.notifyResetComms();
     options.progress(undefined);
     this.emit(EVENT_FLASH);
+  }
+
+  async setDisplay(display: boolean): Promise<void> {
+    this.postMessage("setDisplay", display)
   }
 
   configure(config: Config): void {
