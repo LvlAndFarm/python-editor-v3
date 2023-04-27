@@ -33,7 +33,6 @@ import PreReleaseNotice, { useReleaseDialogState } from "./PreReleaseNotice";
 import ReleaseDialogs from "./ReleaseDialogs";
 import SideBarHeader from "./SideBarHeader";
 import SideBarTab from "./SideBarTab";
-import InteractArea from "../interact/InteractArea"
 
 export const cornerSize = 32;
 
@@ -95,13 +94,6 @@ const SideBar = ({
         icon: PythonLogo as IconType,
         contents: <ApiArea />,
         color: "gray.25",
-      },
-      {
-        id: "interact" as const,
-        title: intl.formatMessage({ id: "interact-tab" }),
-        icon: PythonLogo as IconType,
-        contents: <InteractArea />,
-        color: "gray.50",
         mb: "auto",
       },
       {

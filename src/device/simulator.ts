@@ -152,7 +152,6 @@ export class SimulatorDeviceConnection
       // Not an event for us.
       return;
     }
-    console.log(event)
     switch (event.data.kind) {
       case "ready": {
         this.state = event.data.state;

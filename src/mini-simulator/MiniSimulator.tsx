@@ -9,22 +9,22 @@ import { MAIN_FILE } from "../fs/fs"
 
 const simulatorURL = "https://olivercwy.github.io/microbit-simulator-build/simulator.html"
 
+export type flashType = (code: string) => Promise<void>
+
 interface SimulatorProps {
     size: number,
     debug?: boolean,
-    flashTrigger?: any,
-    onRequestCode?: () => void,
-    code: MutableRefObject<string>,
-    show?: boolean,
+    displayBoard?: boolean,
+    requestCode: () => string,
+    flash?: MutableRefObject<flashType | null>
 }
 
 export const Simulator = ({
     size,
     debug,
-    code,
-    flashTrigger,
-    onRequestCode,
-    show
+    displayBoard,
+    requestCode,
+    flash
 }: SimulatorProps) => {
 
     const ref = useRef<HTMLIFrameElement>(null);
@@ -35,9 +35,8 @@ export const Simulator = ({
         })
     );
 
-    const flash = useCallback(() => {
-        let actualCode = code.current;
-        if (debug) console.log(actualCode);
+    const flashLocal = useCallback((code: string) => {
+        if (debug) console.log(code);
         const iframe = ref.current;
         if (!iframe) {
             throw new Error("Missing simulator iframe.");
@@ -47,7 +46,7 @@ export const Simulator = ({
         const dataSource = {
           async files() {
             return {
-              [MAIN_FILE]: new TextEncoder().encode(actualCode),
+              [MAIN_FILE]: new TextEncoder().encode(code),
             };
           },
           fullFlashData() {
@@ -62,30 +61,27 @@ export const Simulator = ({
           partial: false,
           progress: () => {},
         });
-    },[code, debug])
-    
-    const onRequestCodeProxy = useCallback(() => {onRequestCode && onRequestCode()}, [onRequestCode])
+    },[debug])
+
+    if (flash){
+        flash.current = flashLocal
+    }
 
     useEffect(() => {
         const sim = simulator.current;
         sim.initialize();
         sim.addListener("request_flash", () => {
-            onRequestCodeProxy()
-            flash()
+            flashLocal(requestCode())
         });
         return () => {
             sim.dispose();
         };
-    }, [onRequestCodeProxy, flash]);
-
-    useEffect(() => {
-        flash()
-    },[flashTrigger, flash]);
+    }, [requestCode, flashLocal]);
 
     useEffect(()=>{
         const sim = simulator.current
-        sim.setDisplay(show === undefined ? true : show)
-    },[show])
+        sim.setDisplay(displayBoard === undefined ? true : displayBoard)
+    },[displayBoard])
 
     return (
         <Box width={size} height={size} overflow="hidden" textAlign='center'>
