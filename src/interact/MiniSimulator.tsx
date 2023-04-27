@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, MutableRefObject, useCallback } from "react";
 import {
   AspectRatio,
   Box,
@@ -7,15 +7,15 @@ import { SimulatorDeviceConnection } from "../device/simulator";
 import { useLogging } from "../logging/logging-hooks";
 import { MAIN_FILE } from "../fs/fs"
 
-const simulatorURL = "https://python-simulator.usermbit.org/v/0.1/simulator.html"
+const simulatorURL = "https://olivercwy.github.io/microbit-simulator-build/simulator.html"
 
 interface SimulatorProps {
     size: number,
     debug?: boolean,
     flashTrigger?: any,
     onRequestCode?: () => void,
-    code: string,
-    displayBoard?: boolean,
+    code: MutableRefObject<string>,
+    show?: boolean,
 }
 
 export const Simulator = ({
@@ -24,7 +24,7 @@ export const Simulator = ({
     code,
     flashTrigger,
     onRequestCode,
-    displayBoard
+    show
 }: SimulatorProps) => {
 
     const ref = useRef<HTMLIFrameElement>(null);
@@ -35,8 +35,9 @@ export const Simulator = ({
         })
     );
 
-    const flash = (code: string) => {
-        if (debug) console.log(code);
+    const flash = useCallback(() => {
+        let actualCode = code.current;
+        if (debug) console.log(actualCode);
         const iframe = ref.current;
         if (!iframe) {
             throw new Error("Missing simulator iframe.");
@@ -46,7 +47,7 @@ export const Simulator = ({
         const dataSource = {
           async files() {
             return {
-              [MAIN_FILE]: new TextEncoder().encode(code),
+              [MAIN_FILE]: new TextEncoder().encode(actualCode),
             };
           },
           fullFlashData() {
@@ -61,33 +62,34 @@ export const Simulator = ({
           partial: false,
           progress: () => {},
         });
-    }
+    },[code, debug])
     
+    const onRequestCodeProxy = useCallback(() => {onRequestCode && onRequestCode()}, [onRequestCode])
+
     useEffect(() => {
         const sim = simulator.current;
         sim.initialize();
         sim.addListener("request_flash", () => {
-            onRequestCode && onRequestCode()
-            flash(code)
+            onRequestCodeProxy()
+            flash()
         });
         return () => {
             sim.dispose();
         };
-    }, []);
+    }, [onRequestCodeProxy, flash]);
 
     useEffect(() => {
-        flash(code)
-    },[code, flashTrigger]);
+        flash()
+    },[flashTrigger, flash]);
 
     useEffect(()=>{
-        const sim = simulator.current;
-        displayBoard = displayBoard || true
-        sim.setDisplay(displayBoard)
-    },[displayBoard])
+        const sim = simulator.current
+        sim.setDisplay(show === undefined ? true : show)
+    },[show])
 
     return (
         <Box width={size} height={size} overflow="hidden" textAlign='center'>
-            <AspectRatio ratio={191.27 / 155.77} width="100%">
+            <AspectRatio ratio={191.27 / 155.77}  position="relative" left="-95.7%" top="-77.3%" width="290%" maxH="300%" >
                 <Box
                     ref={ref}
                     as="iframe"

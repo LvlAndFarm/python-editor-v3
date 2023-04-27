@@ -279,7 +279,7 @@ export class SimulatorDeviceConnection
   }
 
   async setDisplay(display: boolean): Promise<void> {
-    this.postMessage("setDisplay", display)
+    this.postMessage("set_display", {"display": display})
   }
 
   configure(config: Config): void {
