@@ -62,7 +62,7 @@ function line2LineInfo(
     moduleName = undefined;
     method = node2str(line.firstChild.firstChild!, state);
   }
-
+  
   const argList = line.firstChild.lastChild;
   let arg = argList?.firstChild;
   let args = [];
