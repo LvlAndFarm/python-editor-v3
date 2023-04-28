@@ -360,25 +360,60 @@ const ExampleSoundInteraction = () =>  {
 
 export const ExampleGraphicsInteraction = () => {
 
+  const [selectedValues, setSelectedValues] = useState<Array<number | null>>(Array(25).fill(0));
+
+  const handleMenuClick = (index: number, value: number) => {
+    setSelectedValues(prevValues => {
+      const newValues = [...prevValues];
+      newValues[index] = value;
+      return newValues;
+    });
+  };
+
+  const handleReset = () => {
+    setSelectedValues(Array(25).fill(0));
+  };
+
+  const colorSchemeMap: { [key: number]: string } = {
+    0: "black",
+    1: "#330000",
+    2: "#4d0000",
+    3: "#660000",
+    4: "#800000",
+    5: "#990000",
+    6: "#b30000",
+    7: "#cc0000",
+    8: "#e60000",
+    9: "#ff0000",
+  };
+
+  const getColor = (i: number) => {
+    const value = selectedValues[i];
+    if (value !== null) {
+      return colorSchemeMap[value];
+    }
+    return "black";
+  };
+
   function pixelGrid(){
-    const pixelValues = new Array(25);
+    const pixelValues = [];
     for (let i = 0; i < 25; i++){
       pixelValues.push(
         <GridItem w='100%' h='10'>
         <Center><Menu>
-          <MenuButton as={Button} size='sm' bg='red'>
+          <MenuButton as={Button} size='sm' bg={getColor(i)}>
           </MenuButton>
           <MenuList>
-            <MenuItem>0</MenuItem>
-            <MenuItem>1</MenuItem>
-            <MenuItem>2</MenuItem>
-            <MenuItem>3</MenuItem>
-            <MenuItem>4</MenuItem>
-            <MenuItem>5</MenuItem>
-            <MenuItem>6</MenuItem>
-            <MenuItem>7</MenuItem>
-            <MenuItem>8</MenuItem>
-            <MenuItem>9</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 0)}>0</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 1)}>1</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 2)}>2</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 3)}>3</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 4)}>4</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 5)}>5</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 6)}>6</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 7)}>7</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 8)}>8</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 9)}>9</MenuItem>
           </MenuList>
         </Menu></Center>
         </GridItem>
@@ -389,24 +424,12 @@ export const ExampleGraphicsInteraction = () => {
         <SimpleGrid gap={1} p={5} columns={5}>
           {pixelValues}
         </SimpleGrid>
+        <Box mt={4}>
+            <Center><Button onClick={handleReset} bg='white'>Reset</Button></Center>
+          </Box>
       </Box>
     )
   }
-
-  const colorSchemeMap = {
-    0: "black",
-    1: "red.900",
-    2: "red.850",
-    3: "red.800",
-    4: "red.750",
-    5: "red.700",
-    6: "red.650",
-    7: "red.600",
-    8: "red.550",
-    9: "red.500",
-  };
-
-  //const colorScheme = colorSchemeMap[value] || "gray"
 
   
   return (
