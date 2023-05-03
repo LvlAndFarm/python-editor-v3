@@ -25,12 +25,12 @@ import {
   VStack,
   Input,
 } from "@chakra-ui/react";
-import React, { useState } from "react";
+import React, { FC, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { useLineInfo } from "../editor/codemirror/LineInfoContext";
 import HeadedScrollablePanel from "./../common/HeadedScrollablePanel";
 import { useActiveEditorActions } from "../editor/active-editor-hooks";
-import { inferTypeinfoFromArgs, TypedFunctionSignature, typeshedInfo, TypeshedInfo } from "../editor/TypeshedTable";
+import { inferTypeinfoFromArgs, ParameterType, TypedFunctionSignature, typeshedInfo, TypeshedInfo } from "../editor/TypeshedTable";
 // console.warn(typeshedInfo)
 
 const labelStyles1 = {
@@ -95,61 +95,76 @@ const InteractionArea = () => {
               case "float":
                 return (
                   <React.Fragment key={i}>
-              <Text p={5} as="b">
-                <FormattedMessage id={typeInfo?.parameters[i].parameterName} />
-              </Text>
-              <Box m={10}>
-                <Slider
-                  focusThumbOnChange={false}
-                  aria-label="slider-ex-6"
-                  onChange={onChangeHandler(i)}
-                  value={parseInt(arg!)}
-                  max={5000}
-                >
-                  <SliderMark value={150} {...labelStyles1}>
-                    0
-                  </SliderMark>
-                  <SliderMark value={2500} {...labelStyles1}>
-                    2500
-                  </SliderMark>
-                  <SliderMark value={4800} {...labelStyles1}>
-                    5000
-                  </SliderMark>
-                  <SliderMark
-                    value={parseInt(arg!)}
-                    textAlign="center"
-                    bg="blue.500"
-                    color="white"
-                    mt="-10"
-                    ml="-5"
-                    w="12"
-                  >
-                    {parseInt(arg!)}
-                  </SliderMark>
-                  <SliderTrack>
-                    <SliderFilledTrack />
-                  </SliderTrack>
-                  <SliderThumb />
-                </Slider>
-              </Box>
+                    <Text p={5} as="b">
+                      <FormattedMessage
+                        id={typeInfo?.parameters[i].parameterName}
+                      />
+                    </Text>
+                    <Box m={10}>
+                      <Slider
+                        focusThumbOnChange={false}
+                        aria-label="slider-ex-6"
+                        onChange={onChangeHandler(i)}
+                        value={parseInt(arg!)}
+                        max={5000}
+                      >
+                        <SliderMark value={150} {...labelStyles1}>
+                          0
+                        </SliderMark>
+                        <SliderMark value={2500} {...labelStyles1}>
+                          2500
+                        </SliderMark>
+                        <SliderMark value={4800} {...labelStyles1}>
+                          5000
+                        </SliderMark>
+                        <SliderMark
+                          value={parseInt(arg!)}
+                          textAlign="center"
+                          bg="blue.500"
+                          color="white"
+                          mt="-10"
+                          ml="-5"
+                          w="12"
+                        >
+                          {parseInt(arg!)}
+                        </SliderMark>
+                        <SliderTrack>
+                          <SliderFilledTrack />
+                        </SliderTrack>
+                        <SliderThumb />
+                      </Slider>
+                    </Box>
 
-              <Divider borderWidth="2px" />
-            </React.Fragment>
-                )
+                    <Divider borderWidth="2px" />
+                  </React.Fragment>
+                );
+
+              case ParameterType.Image:
+                return <ImageEditor values={image2values(arg)} onChange={(val) => {
+                  // We receive an array of ints, which we convert back to string form
+                  const imgString = `Image("${val.slice(0,5).join("")}:${val.slice(5,10).join("")}:${val.slice(10,15).join("")}`
+                  + `:${val.slice(15,20).join("")}:${val.slice(20,25).join("")}")`
+                  onChangeHandler(i)(imgString)
+                }}/>
             
               default:
                 return (
                   <React.Fragment key={i}>
-              <Text p={5} pb={0} as="b">
-                <FormattedMessage id={typeInfo?.parameters[i].parameterName} />
-              </Text>
-              <Input value={arg} onChange={(e) => {
-                onChangeHandler(i)(e.target.value)
-              }}/>
+                    <Text p={5} pb={0} as="b">
+                      <FormattedMessage
+                        id={typeInfo?.parameters[i].parameterName}
+                      />
+                    </Text>
+                    <Input
+                      value={arg}
+                      onChange={(e) => {
+                        onChangeHandler(i)(e.target.value);
+                      }}
+                    />
 
-              <Divider borderWidth="2px" />
-            </React.Fragment>
-                )
+                    <Divider borderWidth="2px" />
+                  </React.Fragment>
+                );
             }
           })}
         </VStack>
@@ -408,20 +423,26 @@ const ExampleSoundInteraction = () =>  {
   );
 };
 
-export const ExampleGraphicsInteraction = () => {
+interface ImageEditorProps {
+  values: number[],
+  onChange: (val: number[]) => void
+}
 
-  const [selectedValues, setSelectedValues] = useState<Array<number | null>>(Array(25).fill(0));
+const ImageEditor: FC<ImageEditorProps> = ({ values, onChange }) => {
+
+  // const [selectedValues, setSelectedValues] = useState<Array<number>>(values);
 
   const handleMenuClick = (index: number, value: number) => {
-    setSelectedValues(prevValues => {
-      const newValues = [...prevValues];
-      newValues[index] = value;
-      return newValues;
-    });
+    // setSelectedValues(prevValues => {
+      // const newValues = [...values];
+      values[index] = value;
+      onChange(values)
+    // });
   };
 
   const handleReset = () => {
-    setSelectedValues(Array(25).fill(0));
+    // setSelectedValues(Array(25).fill(0));
+    onChange(Array(25).fill(0))
   };
 
   const colorSchemeMap: { [key: number]: string } = {
@@ -438,7 +459,7 @@ export const ExampleGraphicsInteraction = () => {
   };
 
   const getColor = (i: number) => {
-    const value = selectedValues[i];
+    const value = values[i];
     if (value !== null) {
       return colorSchemeMap[value];
     }
@@ -482,24 +503,25 @@ export const ExampleGraphicsInteraction = () => {
   }
 
   
-  return (
-    <HeadedScrollablePanel>
-      <Box m={7}>
-        <VStack spacing={4} align="stretch">
-          <Text p={5} as="b">
-            <FormattedMessage id="Pixels" />
-          </Text>
-
-        <Text p={5} as='b'>
-          <FormattedMessage id="Pixels" />
-        </Text>
-
-        {pixelGrid()}
-
-      </VStack>
-    </Box>
-  </HeadedScrollablePanel>
-  )
+  return pixelGrid()
 }
 
 export default InteractionArea;
+
+function image2values(arg: string) {
+  if (arg.startsWith("Image.")) {
+    // Image variable is used
+    switch (arg) {
+      case "Image.HEART":
+        return [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4]
+    
+      default:
+        return Array(25).fill(0)
+    }
+  } else {
+    // A string of numbers is used instead
+    console.log(arg.slice(7,-2).split(":").flatMap(arr => arr.split('')).map(Number))
+    return arg.slice(7,-2).split(":").flatMap(arr => arr.split('').map(Number))
+  }
+}
+

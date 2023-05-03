@@ -100,7 +100,7 @@ export function inferTypeinfoFromArgs(args: string[]): TypedParameter[] {
 // The following modules are covered:
 // microbit
 
-enum ParameterType {
+export enum ParameterType {
     Int = "int", 
     Float = "float", 
     String = "string", 
@@ -111,7 +111,6 @@ enum ParameterType {
     Volume = "volume",
     PixelCoordinates = "pixelCoordinates", //for get_pixel
     PixelCoordinatesWithBrightness = "pixelCoordinatesWithBrightness", //for set_pixel
-    Text = "text"
     //scrolls string by default, but converts integer/float input to string using str() - wasn't sure whether to just put
     //String or make a new type.
 }
@@ -153,7 +152,7 @@ export const typeshedInfo: TypeshedInfo = {
       },
       {
         parameterName: "brightness",
-        type: "ParameterType.Int",
+        type: ParameterType.Int,
         defaultValue: "1",
         range: [0, 9],
       }
@@ -166,7 +165,7 @@ export const typeshedInfo: TypeshedInfo = {
     parameters: [
       {
         parameterName: "text",
-        type: ParameterType.Text,
+        type: ParameterType.String,
         defaultValue: "Hello",
       },
       {
