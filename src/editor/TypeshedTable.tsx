@@ -103,7 +103,14 @@ enum ParameterType {
     Int = "int", 
     Float = "float", 
     String = "string", 
-    SoundEffect = "soundeffect"
+    SoundEffect = "soundeffect",
+    Boolean = "boolean",
+    Image = "image",
+    PixelCoordinates = "pixelCoordinates", //for get_pixel
+    PixelCoordinatesWithBrightness = "pixelCoordinatesWithBrightness", //for set_pixel
+    Text = "text"
+    //scrolls string by default, but converts integer/float input to string using str() - wasn't sure whether to just put
+    //String or make a new type.
 }
 
 export const typeshedInfo: TypeshedInfo = {
@@ -118,6 +125,96 @@ export const typeshedInfo: TypeshedInfo = {
     ],
     returnType: "None",
   },
+
+
+  "stdlib.microbit.display.get_pixel": {
+    name: "get_pixel",
+    parameters: [
+      {
+        parameterName: "coordinates",
+        type: ParameterType.PixelCoordinates,
+        defaultValue: null,
+      },
+    ],
+    returnType: "ParameterType.Int",
+  },
+
+  "stdlib.microbit.display.set_pixel": {
+    name: "set_pixel",
+    parameters: [
+      {
+        parameterName: "coordinatesAndBrightness",
+        type: ParameterType.PixelCoordinatesWithBrightness,
+        defaultValue: null,
+      },
+    ],
+    returnType: "None",
+  },
+
+  "stdlib.microbit.display.scroll": {
+    name: "scroll",
+    parameters: [
+      {
+        parameterName: "text",
+        type: ParameterType.Text,
+        defaultValue: "Hello",
+      },
+      {
+        parameterName: "delay",
+        type: ParameterType.Int,
+        defaultValue: "100",
+      },
+      {
+        parameterName: "wait",
+        type: ParameterType.Boolean,
+        defaultValue: "True",
+      },
+      {
+        parameterName: "loop",
+        type: ParameterType.Boolean,
+        defaultValue: "False",
+      },
+      {
+        parameterName: "monospace",
+        type: ParameterType.Boolean,
+        defaultValue: "False",
+      },
+    ],
+    returnType: "None",
+  },
+
+  "stdlib.microbit.display.show": {
+    name: "show",
+    parameters: [
+      {
+        parameterName: "image",
+        type: ParameterType.Image,
+        defaultValue: "Hello",
+      },
+      {
+        parameterName: "delay",
+        type: ParameterType.Int,
+        defaultValue: "100",
+      },
+      {
+        parameterName: "wait",
+        type: ParameterType.Boolean,
+        defaultValue: "True",
+      },
+      {
+        parameterName: "loop",
+        type: ParameterType.Boolean,
+        defaultValue: "False",
+      },
+      {
+        parameterName: "clear",
+        type: ParameterType.Boolean,
+        defaultValue: "False",
+      },
+    ],
+    returnType: "None",
+  },
+
   "stdlib.microbit.audio.play": {
     name: "play",
     parameters: [
