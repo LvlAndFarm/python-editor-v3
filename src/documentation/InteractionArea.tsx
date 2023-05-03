@@ -23,12 +23,15 @@ import {
   SliderThumb,
   SliderTrack,
   VStack,
+  Input,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { useLineInfo } from "../editor/codemirror/LineInfoContext";
 import HeadedScrollablePanel from "./../common/HeadedScrollablePanel";
 import { useActiveEditorActions } from "../editor/active-editor-hooks";
+import { inferTypeinfoFromArgs, TypedFunctionSignature, typeshedInfo, TypeshedInfo } from "../editor/TypeshedTable";
+// console.warn(typeshedInfo)
 
 const labelStyles1 = {
   mt: "2",
@@ -43,6 +46,37 @@ const InteractionArea = () => {
 
   if (lineInfo?.statementType !== "CALL") return null;
 
+  let typeInfo: TypedFunctionSignature|undefined = undefined;
+
+  const qualifiedName = lineInfo.callInfo.moduleName ? 
+    `${lineInfo.callInfo.moduleName}.${lineInfo.callInfo.name}` :
+     lineInfo.callInfo.name;
+  const typeshedId = `stdlib.builtins.${qualifiedName}`
+  const typeshedMicrobitId = `stdlib.microbit.${qualifiedName}`;
+  console.warn(typeshedId)
+  if (typeshedInfo[typeshedId]) {
+    typeInfo = typeshedInfo[typeshedId]
+  } else if (typeshedInfo[typeshedMicrobitId]) {
+    typeInfo = typeshedInfo[typeshedMicrobitId]
+  }
+
+  if (typeInfo === undefined) {
+    console.log("Inferred type info from arguments instead")
+    typeInfo = {
+      name: qualifiedName,
+      parameters: inferTypeinfoFromArgs(lineInfo.callInfo.arguments),
+      returnType: "any"
+    }
+  }
+
+  const onChangeHandler = (i: number) => (val: any) => {
+    const argCopy = [...lineInfo.callInfo!.arguments];
+    argCopy[i] = val.toString();
+    activeEditorActions?.dispatchTransaction(
+      lineInfo.createArgumentUpdate(argCopy)
+    );
+  }
+
   // const firstArgNum = parseInt(lineInfo.callInfo?.arguments[0]!)
 
   return (
@@ -51,24 +85,24 @@ const InteractionArea = () => {
         <Heading>Interaction</Heading>
 
         <Divider borderWidth="2px" />
+        <Text p={5} as="b">
+          Function: {qualifiedName}
+        </Text>
 
         <VStack spacing={4} align="stretch">
-          {lineInfo.callInfo?.arguments.map((arg, i) => (
-            <React.Fragment key={i}>
+          {lineInfo.callInfo?.arguments.map((arg, i) => {
+            switch (typeInfo?.parameters[i].type) {
+              case "float":
+                return (
+                  <React.Fragment key={i}>
               <Text p={5} as="b">
-                <FormattedMessage id="Start Frequency" />
+                <FormattedMessage id={typeInfo?.parameters[i].parameterName} />
               </Text>
               <Box m={10}>
                 <Slider
                   focusThumbOnChange={false}
                   aria-label="slider-ex-6"
-                  onChange={(val) => {
-                    const argCopy = [...lineInfo.callInfo!.arguments];
-                    argCopy[i] = val.toString();
-                    activeEditorActions?.dispatchTransaction(
-                      lineInfo.createArgumentUpdate(argCopy)
-                    );
-                  }}
+                  onChange={onChangeHandler(i)}
                   value={parseInt(arg!)}
                   max={5000}
                 >
@@ -101,7 +135,23 @@ const InteractionArea = () => {
 
               <Divider borderWidth="2px" />
             </React.Fragment>
-          ))}
+                )
+            
+              default:
+                return (
+                  <React.Fragment key={i}>
+              <Text p={5} pb={0} as="b">
+                <FormattedMessage id={typeInfo?.parameters[i].parameterName} />
+              </Text>
+              <Input value={arg} onChange={(e) => {
+                onChangeHandler(i)(e.target.value)
+              }}/>
+
+              <Divider borderWidth="2px" />
+            </React.Fragment>
+                )
+            }
+          })}
         </VStack>
       </Box>
     </HeadedScrollablePanel>

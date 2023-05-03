@@ -1,12 +1,12 @@
 import typeshedJson from "../micropython/main/typeshed.en.json"
 
 export interface TypedParameter{
-    parameterName:String,
+    parameterName:string,
     type:string,
     defaultValue:any
 }
 export interface TypedFunctionSignature{
-    name:String,
+    name:string,
     parameters:TypedParameter[],
     returnType:string
 }
@@ -75,3 +75,58 @@ export function typeshedJsonToMap():TypeshedInfo{
     console.log(ret);
     return ret 
 }
+
+export function inferTypeinfoFromArgs(args: string[]): TypedParameter[] {
+    return args.map((arg, i) => {
+        // Try to convert arg to number
+        let type = "str"
+        const int = parseInt(arg)
+        const float = parseFloat(arg)
+        if (!isNaN(int)) {
+            // Is an int or float
+            type = "float"
+        }
+        return {
+            parameterName: `Parameter ${i+1}`,
+            defaultValue: null,
+            type
+        }
+    })
+}
+
+// export const typeshedInfo = typeshedJsonToMap()
+// STUB definition due to project time constraints
+// The following modules are covered:
+// microbit
+
+enum ParameterType {
+    Int = "int", 
+    Float = "float", 
+    String = "string", 
+    SoundEffect = "soundeffect"
+}
+
+export const typeshedInfo: TypeshedInfo = {
+  "stdlib.builtins.sleep": {
+    name: "sleep",
+    parameters: [
+      {
+        parameterName: "duration",
+        type: ParameterType.Float,
+        defaultValue: "1",
+      },
+    ],
+    returnType: "None",
+  },
+  "stdlib.microbit.audio.play": {
+    name: "play",
+    parameters: [
+      {
+        parameterName: "Sound",
+        type: ParameterType.SoundEffect,
+        defaultValue: null,
+      },
+    ],
+    returnType: "None",
+  },
+};
