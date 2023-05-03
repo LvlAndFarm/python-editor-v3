@@ -2,6 +2,7 @@ import typeshedJson from "../micropython/main/typeshed.en.json"
 
 export interface TypedParameter{
     parameterName:string,
+    range?: number[],
     type:string,
     defaultValue:any
 }
@@ -106,6 +107,8 @@ enum ParameterType {
     SoundEffect = "soundeffect",
     Boolean = "boolean",
     Image = "image",
+    Tuple = "tuple",
+    Volume = "volume",
     PixelCoordinates = "pixelCoordinates", //for get_pixel
     PixelCoordinatesWithBrightness = "pixelCoordinatesWithBrightness", //for set_pixel
     Text = "text"
@@ -120,6 +123,7 @@ export const typeshedInfo: TypeshedInfo = {
       {
         parameterName: "duration",
         type: ParameterType.Float,
+        range: [0, 10000],
         defaultValue: "1",
       },
     ],
@@ -143,10 +147,16 @@ export const typeshedInfo: TypeshedInfo = {
     name: "set_pixel",
     parameters: [
       {
-        parameterName: "coordinatesAndBrightness",
-        type: ParameterType.PixelCoordinatesWithBrightness,
+        parameterName: "coordinates",
+        type: ParameterType.PixelCoordinates,
         defaultValue: null,
       },
+      {
+        parameterName: "brightness",
+        type: "ParameterType.Int",
+        defaultValue: "1",
+        range: [0, 9],
+      }
     ],
     returnType: "None",
   },
@@ -163,6 +173,7 @@ export const typeshedInfo: TypeshedInfo = {
         parameterName: "delay",
         type: ParameterType.Int,
         defaultValue: "100",
+        range: [10, 800],
       },
       {
         parameterName: "wait",
@@ -195,6 +206,7 @@ export const typeshedInfo: TypeshedInfo = {
         parameterName: "delay",
         type: ParameterType.Int,
         defaultValue: "100",
+        range: [10, 800],
       },
       {
         parameterName: "wait",
@@ -211,6 +223,42 @@ export const typeshedInfo: TypeshedInfo = {
         type: ParameterType.Boolean,
         defaultValue: "False",
       },
+    ],
+    returnType: "None",
+  },
+
+  "stdlib.microbit.scale": {
+    name: "scale",
+    parameters: [
+      {
+        parameterName: "value",
+        type: ParameterType.Float,
+        defaultValue: "0",
+        range: [-1000, 1000],
+      },
+      {
+        parameterName: "from_",
+        type: ParameterType.Tuple,
+        defaultValue: null,
+      },
+      {
+        parameterName: "to",
+        type: ParameterType.Tuple,
+        defaultValue: null,
+      },
+    ],
+    returnType: "None",
+  },
+
+  "stdlib.microbit.set_volume": {
+    name: "set_volume",
+    parameters: [
+        {
+            parameterName: "volume",
+            type: ParameterType.Int,
+            defaultValue: "100",
+            range: [0, 255],
+        }
     ],
     returnType: "None",
   },
