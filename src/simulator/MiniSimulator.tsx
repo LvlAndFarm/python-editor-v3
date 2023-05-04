@@ -2,29 +2,34 @@ import { useEffect, useRef, MutableRefObject, useCallback } from "react";
 import {
   AspectRatio,
   Box,
+  LayoutProps
 } from "@chakra-ui/react";
 import { SimulatorDeviceConnection, EVENT_STATE_CHANGE, EVENT_REQUEST_FLASH } from "../device/simulator";
 import { useLogging } from "../logging/logging-hooks";
 import { MAIN_FILE } from "../fs/fs"
 
 const simulatorURL = "https://olivercwy.github.io/microbit-simulator-build/simulator.html"
+// const simulatorURL = "http://localhost:8000/simulator.html"
 
-export type flashType = (code: string) => Promise<void>
+export interface SimulatorFunctions {
+    flash?: (code: string) => Promise<void>,
+    stop?: () => Promise<void>
+}
 
 interface SimulatorProps {
-    size: number,
+    size: LayoutProps["width"],
     debug?: boolean,
     displayBoard?: boolean,
-    requestCode: () => string,
-    flash?: MutableRefObject<flashType | null>
+    eventListeners?: Record<string, (data: any) => any>,
+    functions?: SimulatorFunctions
 }
 
 export const Simulator = ({
     size,
     debug,
     displayBoard,
-    requestCode,
-    flash
+    eventListeners,
+    functions
 }: SimulatorProps) => {
 
     const ref = useRef<HTMLIFrameElement>(null);
@@ -35,7 +40,7 @@ export const Simulator = ({
         })
     );
 
-    const flashLocal = useCallback((code: string) => {
+    const flash = useCallback((code: string) => {
         if (debug) console.log(code);
         const iframe = ref.current;
         if (!iframe) {
@@ -63,31 +68,40 @@ export const Simulator = ({
         });
     },[debug])
 
-    if (flash){
-        flash.current = flashLocal
+    if (functions){
+        functions.flash = flash
+        functions.stop = () => {
+            const iframe = ref.current;
+            if (!iframe) {
+                throw new Error("Missing simulator iframe.");
+            }
+            const sim = simulator.current;
+
+            return sim.stop()
+        }
     }
 
     useEffect(() => {
         const sim = simulator.current;
         sim.initialize();
-        sim.addListener(EVENT_REQUEST_FLASH, () => {
-            flashLocal(requestCode())
-        });
-        sim.addListener(EVENT_STATE_CHANGE, () => {
-            sim.setDisplay(displayBoard === undefined ? true : displayBoard)
-        });
+        for (const key in eventListeners) {
+            console.log(key)
+            const listener = eventListeners[key];
+            console.log(listener)
+            listener && sim.addListener(key, listener);
+        }
         return () => {
             sim.dispose();
         };
-    }, [requestCode, flashLocal]);
+    }, [eventListeners]);
 
     useEffect(()=>{
         simulator.current.setDisplay(displayBoard === undefined ? true : displayBoard)
     },[displayBoard, simulator.current])
 
     return (
-        <Box width={size} height={size} overflow="hidden" textAlign='center'>
-            <AspectRatio ratio={191.27 / 155.77}  position="relative" left="-95.7%" top="-77.3%" width="290%" maxH="300%" >
+        <Box width={size} height={size} overflow="hidden">
+            <AspectRatio ratio={850 / 650}  position="relative" left="-95.7%" top="-77.3%" width="290%" maxH="300%" >
                 <Box
                     ref={ref}
                     as="iframe"

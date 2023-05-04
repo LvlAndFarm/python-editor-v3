@@ -1,4 +1,6 @@
 import { HStack, Text } from "@chakra-ui/react";
+import { EVENT_REQUEST_FLASH } from "../../device/simulator";
+import { EVENT_SERIAL_DATA } from "../../device/device";
 import { syntaxTree } from "@codemirror/language";
 import {
   EditorState,
@@ -13,11 +15,16 @@ import {
   WidgetType,
 } from "@codemirror/view";
 import { SyntaxNode } from "@lezer/common";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { PortalFactory } from "./CodeMirror";
 import { LineInfo } from "./LineInfoContext";
 import "./reactWidgetExtension.css";
-import { Simulator, flashType } from "../../simulator/MiniSimulator"
+import { Simulator, SimulatorFunctions } from "../../simulator/MiniSimulator"
+import {
+  AspectRatio,
+  Box,
+  LayoutProps
+} from "@chakra-ui/react";
 
 /**
  * An example react component that we use inside a CodeMirror widget as
@@ -31,43 +38,84 @@ const MethodCallComponent: React.FC<MethodCallProps> = ({ lineInfo }) => {
   const {
     callInfo: { name, arguments: args, moduleName },
   } = lineInfo;
-  let line = "";
-  if (moduleName) line += moduleName + ".";
-  line += name+"("+args.join(",")+")";
-  let code = "from microbit import *\n";
-  if (moduleName) code +=`
+
+  const code = ()=>{
+    let line = "";
+    if (moduleName) line += moduleName + ".";
+    line += name+"("+args.join(",")+")";
+    let code = "from microbit import *\n";
+    if (moduleName) code +=`
 try:
   import ${moduleName}
 except:pass
 `
-  code += line
-  const flash = useRef<flashType>(null)
-  const [size, setSize] = useState(20)
-  const [displayBoard, setDisplay] = useState(false)
-  const requestCode = () => {
-    setSize(175)
-    console.log(displayBoard)
-    setDisplay(true)
-    console.log("requestCode")
+    code += line
     return code
   }
-  console.log(displayBoard)
+
+  const lineSize = "14pt";
+  const buttonSize = "14pt";
+  const boardSize = "50pt";
+  const functions: SimulatorFunctions = {}
+  const [size, setSize] = useState(buttonSize)
+  const [transform, setTransform] = useState("translateY(25%);")
+  const [displayBoard, setDisplay] = useState(false)
+  const [display, setStyleDisplay] = useState("inline-block")
+
+  const eventListeners : Record<string, (data: any) => any> = {}
+
+  const buttonLayout = () => {
+    setDisplay(false);
+    setSize(buttonSize);
+    setTransform("translateY(25%);");
+    setStyleDisplay("inline-block");
+  }
+
+  const boardLayout = () => {
+    setDisplay(true);
+    setSize(boardSize);
+    setTransform("");
+    setStyleDisplay("");
+  }
+
+  eventListeners[EVENT_REQUEST_FLASH] = () => {
+    const flash = functions.flash
+    if (flash === undefined) {
+      throw new Error("Minisimulator not correctly setup!")
+    }
+    if (moduleName === "display") boardLayout()
+    flash && flash(code())
+  }
+
+  const stop = () => {
+    const simulatorStop = functions.stop
+    if (simulatorStop === undefined) {
+      throw new Error("Minisimulator not correctly setup!")
+    }
+    if (moduleName === "display") buttonLayout()
+    simulatorStop()
+  }
+
+  eventListeners[EVENT_SERIAL_DATA] = (data: any) => {
+    if (!(data === ">>> ")) return
+    if (moduleName === "display" && name === "show") setTimeout(stop, 1000)
+    else stop()
+  }
+
+  console.log(eventListeners)
+
   const simulator = <Simulator 
-    requestCode={requestCode}
+    eventListeners={eventListeners}
     size={size}
     displayBoard={displayBoard}
-    flash={flash}
+    functions={functions}
     debug={true}
   />
-  return (
-    // <HStack fontFamily="body" spacing={5} py={3}>
-    //   <Text>
-    //     Calling method {name} from module {moduleName || "GLOBAL"} with args: [
-    //     {args.join(", ")}]
-    //   </Text>
-    // </HStack>
-    simulator
-  );
+
+  //return simulator;
+  return <Box display={display} transform={transform}>
+    {simulator}
+  </Box>
 };
 
 function node2str(node: SyntaxNode, state: EditorState) {
@@ -156,6 +204,7 @@ class ExampleReactBlockWidget extends WidgetType {
 
   toDOM() {
     const dom = document.createElement("div");
+    dom.style.display = "inline";
     this.portalCleanup = this.createPortal(dom, this.element);
     return dom;
   }
@@ -264,7 +313,7 @@ export const reactWidgetExtension = (
     if (lineInfo) {
       ranges.push(
         Decoration.widget({
-          block: true,
+          block: false,
           widget: new ExampleReactBlockWidget(
             createPortal,
             <MethodCallComponent lineInfo={lineInfo} />
