@@ -96,9 +96,11 @@ export function inferTypeinfoFromArgs(args: string[]): TypedParameter[] {
 }
 
 // export const typeshedInfo = typeshedJsonToMap()
-// STUB definition due to project time constraints
-// The following modules are covered:
-// microbit
+
+// STUB definitions due to project time constraints
+// The following functions are covered:
+// sleep
+// common microbit functions (partly)
 
 export enum ParameterType {
     Int = "int", 
@@ -108,9 +110,6 @@ export enum ParameterType {
     Boolean = "boolean",
     Image = "image",
     Tuple = "tuple",
-    Volume = "volume",
-    PixelCoordinates = "pixelCoordinates", //for get_pixel
-    PixelCoordinatesWithBrightness = "pixelCoordinatesWithBrightness", //for set_pixel
     //scrolls string by default, but converts integer/float input to string using str() - wasn't sure whether to just put
     //String or make a new type.
 }
@@ -129,13 +128,19 @@ export const typeshedInfo: TypeshedInfo = {
     returnType: "None",
   },
 
-
   "stdlib.microbit.display.get_pixel": {
     name: "get_pixel",
     parameters: [
       {
-        parameterName: "coordinates",
-        type: ParameterType.PixelCoordinates,
+        parameterName: "x",
+        type: ParameterType.Int,
+        range: [0, 4],
+        defaultValue: null,
+      },
+      {
+        parameterName: "y",
+        type: ParameterType.Int,
+        range: [0, 4],
         defaultValue: null,
       },
     ],
@@ -146,8 +151,15 @@ export const typeshedInfo: TypeshedInfo = {
     name: "set_pixel",
     parameters: [
       {
-        parameterName: "coordinates",
-        type: ParameterType.PixelCoordinates,
+        parameterName: "x",
+        type: ParameterType.Int,
+        range: [0, 4],
+        defaultValue: null,
+      },
+      {
+        parameterName: "y",
+        type: ParameterType.Int,
+        range: [0, 4],
         defaultValue: null,
       },
       {
@@ -155,7 +167,7 @@ export const typeshedInfo: TypeshedInfo = {
         type: ParameterType.Int,
         defaultValue: "1",
         range: [0, 9],
-      }
+      },
     ],
     returnType: "None",
   },
@@ -252,12 +264,12 @@ export const typeshedInfo: TypeshedInfo = {
   "stdlib.microbit.set_volume": {
     name: "set_volume",
     parameters: [
-        {
-            parameterName: "volume",
-            type: ParameterType.Int,
-            defaultValue: "100",
-            range: [0, 255],
-        }
+      {
+        parameterName: "volume",
+        type: ParameterType.Int,
+        defaultValue: "100",
+        range: [0, 255],
+      },
     ],
     returnType: "None",
   },

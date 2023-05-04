@@ -93,6 +93,7 @@ const InteractionArea = () => {
         <VStack spacing={4} align="stretch">
           {lineInfo.callInfo?.arguments.map((arg, i) => {
             switch (typeInfo?.parameters[i].type) {
+              case "int":
               case "float":
                 return (
                   <React.Fragment key={i}>
@@ -101,40 +102,11 @@ const InteractionArea = () => {
                         id={typeInfo?.parameters[i].parameterName}
                       />
                     </Text>
-                    <Box m={10}>
-                      <Slider
-                        focusThumbOnChange={false}
-                        aria-label="slider-ex-6"
-                        onChange={onChangeHandler(i)}
-                        value={parseInt(arg!)}
-                        max={5000}
-                      >
-                        <SliderMark value={150} {...labelStyles1}>
-                          0
-                        </SliderMark>
-                        <SliderMark value={2500} {...labelStyles1}>
-                          2500
-                        </SliderMark>
-                        <SliderMark value={4800} {...labelStyles1}>
-                          5000
-                        </SliderMark>
-                        <SliderMark
-                          value={parseInt(arg!)}
-                          textAlign="center"
-                          bg="blue.500"
-                          color="white"
-                          mt="-10"
-                          ml="-5"
-                          w="12"
-                        >
-                          {parseInt(arg!)}
-                        </SliderMark>
-                        <SliderTrack>
-                          <SliderFilledTrack />
-                        </SliderTrack>
-                        <SliderThumb />
-                      </Slider>
-                    </Box>
+                    <VarSlider min={typeInfo?.parameters[i].range?.[0]||0} 
+                               max={typeInfo?.parameters[i].range?.[1]||5000}
+                               value={parseInt(arg!)}
+                               defaultVal={typeInfo?.parameters[i].defaultValue||2500}
+                               onChange={onChangeHandler(i)} />
 
                     <Divider borderWidth="2px" />
                   </React.Fragment>
