@@ -53,7 +53,7 @@ const InteractionArea = () => {
      lineInfo.callInfo.name;
   const typeshedId = `stdlib.builtins.${qualifiedName}`
   const typeshedMicrobitId = `stdlib.microbit.${qualifiedName}`;
-  console.warn(typeshedId)
+
   if (typeshedInfo[typeshedId]) {
     typeInfo = typeshedInfo[typeshedId]
   } else if (typeshedInfo[typeshedMicrobitId]) {
@@ -77,6 +77,7 @@ const InteractionArea = () => {
     );
   }
 
+  
   // const firstArgNum = parseInt(lineInfo.callInfo?.arguments[0]!)
 
   return (
@@ -140,11 +141,26 @@ const InteractionArea = () => {
                 );
 
               case ParameterType.Image:
-                return <ImageEditor values={image2values(arg)} onChange={(val) => {
+                return <ImageEditor values={image2array(arg)} onChange={(val) => {
                   // We receive an array of ints, which we convert back to string form
                   const imgString = `Image("${val.slice(0,5).join("")}:${val.slice(5,10).join("")}:${val.slice(10,15).join("")}`
                   + `:${val.slice(15,20).join("")}:${val.slice(20,25).join("")}")`
                   onChangeHandler(i)(imgString)
+                }}/>
+
+              case ParameterType.SoundEffect:
+                return <SoundEditor sound={parseSound(arg)} onChange={sound => {
+                  // Construct the argument list as named parameters to prevent ambiguity
+                  const argString = Object.entries(sound).map(([key, value]) => {
+                    // We need to qualify these enum values just in case they're not in scope
+                    if (["fx", "shape", "waveform"].includes(key)) {
+                      return `${key}=audio.SoundEffect.${value}`
+                    } else {
+                      return `${key}=${value}`
+                    }
+                  }).join(", ")
+                  // SoundEffect is also qualified for the same reason above
+                  onChangeHandler(i)(`audio.SoundEffect(${argString})`)
                 }}/>
             
               default:
@@ -171,17 +187,60 @@ const InteractionArea = () => {
       </Box>
     </HeadedScrollablePanel>
   );
-
-  return ExampleSoundInteraction();
 };
 
-const ExampleSoundInteraction = () =>  {
+interface SoundEditorProps {
+  sound: Sound,
+  onChange: (sound: Sound) => void
+}
 
-  const [sliderValue1, setSliderValue1] = useState(128)
-  const [sliderValue2, setSliderValue2] = useState(128)
-  const [sliderValue3, setSliderValue3] = useState(2500)
-  const [sliderValue4, setSliderValue4] = useState(2500)
-  const [sliderValue5, setSliderValue5] = useState(500)
+interface VarSliderProps {
+  min: number,
+  max: number,
+  value?: number,
+  defaultVal: number,
+  onChange: (value: number) => void
+}
+const VarSlider: FC<VarSliderProps> = ({min, max, value, defaultVal, onChange}) => {
+  // Future work: Improve a11y (aria-label)
+  return (
+    <Box m={10}>
+    <Slider
+      aria-label="variable-slider"
+      onChange={onChange}
+      value={value||defaultVal}
+      max={max}
+    >
+      <SliderMark value={min} {...labelStyles1}>
+        {min}
+      </SliderMark>
+      <SliderMark value={Math.round((min+max)/2)} {...labelStyles1}>
+         {Math.round((min+max)/2)}
+      </SliderMark>
+      <SliderMark value={max} {...labelStyles1}>
+        {max}
+      </SliderMark>
+      <SliderMark
+        value={value||defaultVal}
+        textAlign="center"
+        bg="blue.500"
+        color="white"
+        mt="-10"
+        ml="-5"
+        w="12"
+      >
+        {value||defaultVal}
+      </SliderMark>
+      <SliderTrack>
+        <SliderFilledTrack />
+      </SliderTrack>
+      <SliderThumb />
+    </Slider>
+  </Box>
+  )
+}
+
+const SoundEditor: FC<SoundEditorProps> = ({sound, onChange}) =>  {
 
   const labelStyles1 = {
     mt: "2",
@@ -189,209 +248,63 @@ const ExampleSoundInteraction = () =>  {
     fontSize: "sm",
   };
 
+
+  // We've passed in the sound object and mutate it before we call notify
+  const onChangeHandler = (param: string, value: any) => {
+    // We know that param must be part of the sound object as we've hardcoded the fields
+    (sound as Record<string, any>)[param] = value;
+    onChange(sound)
+  }
+
   return (
-    <HeadedScrollablePanel>
-      <Box m={7}>
-        <Heading>Interaction</Heading>
-
-        <Divider borderWidth="2px" />
-
-        <VStack spacing={4} align="stretch">
+    <>
           <Text p={5} as="b">
             <FormattedMessage id="Start Frequency" />
           </Text>
-          <Box m={10}>
-            <Slider
-              aria-label="slider-ex-6"
-              onChange={(val) => setSliderValue3(val)}
-              max={5000}
-            >
-              <SliderMark value={150} {...labelStyles1}>
-                0
-              </SliderMark>
-              <SliderMark value={2500} {...labelStyles1}>
-                2500
-              </SliderMark>
-              <SliderMark value={4800} {...labelStyles1}>
-                5000
-              </SliderMark>
-              <SliderMark
-                value={sliderValue3}
-                textAlign="center"
-                bg="blue.500"
-                color="white"
-                mt="-10"
-                ml="-5"
-                w="12"
-              >
-                {sliderValue3}
-              </SliderMark>
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </Box>
+          <VarSlider min={0} max={9999} value={sound.freq_start} defaultVal={5000}
+            onChange={val => onChangeHandler("freq_start", val)} />
 
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
             <FormattedMessage id="End Frequency" />
           </Text>
-          <Box m={10}>
-            <Slider
-              aria-label="slider-ex-6"
-              onChange={(val) => setSliderValue4(val)}
-              max={5000}
-            >
-              <SliderMark value={150} {...labelStyles1}>
-                0
-              </SliderMark>
-              <SliderMark value={2500} {...labelStyles1}>
-                2500
-              </SliderMark>
-              <SliderMark value={4800} {...labelStyles1}>
-                5000
-              </SliderMark>
-              <SliderMark
-                value={sliderValue4}
-                textAlign="center"
-                bg="blue.500"
-                color="white"
-                mt="-10"
-                ml="-5"
-                w="12"
-              >
-                {sliderValue4}
-              </SliderMark>
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </Box>
+          <VarSlider min={0} max={9999} value={sound.freq_end} defaultVal={5000}
+            onChange={val => onChangeHandler("freq_end", val)} />
 
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
             <FormattedMessage id="Duration" />
           </Text>
-          <Box m={10}>
-            <Slider aria-label='slider-ex-6' onChange={(val) => setSliderValue5(val)} min={1} max={999}>
-              <SliderMark value={10} {...labelStyles1}>
-                1
-              </SliderMark>
-              <SliderMark value={500} {...labelStyles1}>
-                500
-              </SliderMark>
-              <SliderMark value={960} {...labelStyles1}>
-                999
-              </SliderMark>
-              <SliderMark
-                value={sliderValue5}
-                textAlign='center'
-                bg='blue.500'
-                color='white'
-                mt='-10'
-                ml='-5'
-                w='12'
-              >
-                {sliderValue5}
-              </SliderMark>
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </Box>
+          <VarSlider min={0} max={9999} value={sound.duration} defaultVal={5000}
+            onChange={val => onChangeHandler("duration", val)} />
 
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
             <FormattedMessage id="Start Volume" />
           </Text>
-          <Box m={10}>
-            <Slider
-              aria-label="slider-ex-6"
-              onChange={(val) => setSliderValue1(val)}
-              max={255}
-            >
-              <SliderMark value={10} {...labelStyles1}>
-                0
-              </SliderMark>
-              <SliderMark value={128} {...labelStyles1}>
-                128
-              </SliderMark>
-              <SliderMark value={245} {...labelStyles1}>
-                255
-              </SliderMark>
-              <SliderMark
-                value={sliderValue1}
-                textAlign="center"
-                bg="blue.500"
-                color="white"
-                mt="-10"
-                ml="-5"
-                w="12"
-              >
-                {sliderValue1}
-              </SliderMark>
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </Box>
+          <VarSlider min={0} max={255} value={sound.vol_start} defaultVal={255}
+            onChange={val => onChangeHandler("vol_start", val)} />
 
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
             <FormattedMessage id="End Volume" />
           </Text>
-          <Box m={10}>
-            <Slider
-              aria-label="slider-ex-6"
-              onChange={(val) => setSliderValue2(val)}
-              max={255}
-            >
-              <SliderMark value={10} {...labelStyles1}>
-                0
-              </SliderMark>
-              <SliderMark value={128} {...labelStyles1}>
-                128
-              </SliderMark>
-              <SliderMark value={245} {...labelStyles1}>
-                255
-              </SliderMark>
-              <SliderMark
-                value={sliderValue2}
-                textAlign="center"
-                bg="blue.500"
-                color="white"
-                mt="-10"
-                ml="-5"
-                w="12"
-              >
-                {sliderValue2}
-              </SliderMark>
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </Box>
+          <VarSlider min={0} max={255} value={sound.vol_end} defaultVal={255}
+            onChange={val => onChangeHandler("vol_end", val)} />
 
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
             <FormattedMessage id="Waveform" />
           </Text>
-          <Select placeholder="Select option">
-            <option value="option1">Sine</option>
-            <option value="option2">Sawtooth</option>
-            <option value="option3">Triangle</option>
-            <option value="option4">Square</option>
-            <option value="option5">Noise</option>
+          <Select value={sound.waveform||soundWaveforms.Square} onChange={e => onChangeHandler("waveform", e.target.value)}>
+            {Object.entries(soundWaveforms).map(([key, val]) => (
+              <option value={val}>{key}</option>
+            ))}
           </Select>
 
           <Divider borderWidth="2px" />
@@ -399,10 +312,10 @@ const ExampleSoundInteraction = () =>  {
           <Text p={5} as="b">
             <FormattedMessage id="Effect" />
           </Text>
-          <Select placeholder="None">
-            <option value="option1">Tremolo</option>
-            <option value="option2">Vibrato</option>
-            <option value="option3">Warble</option>
+          <Select value={sound.fx||soundFx.None} onChange={e => onChangeHandler("fx", e.target.value)}>
+            {Object.entries(soundFx).map(([key, val]) => (
+              <option value={val}>{key}</option>
+            ))}
           </Select>
 
           <Divider borderWidth="2px" />
@@ -410,22 +323,21 @@ const ExampleSoundInteraction = () =>  {
           <Text p={5} as="b">
             <FormattedMessage id="Shape" />
           </Text>
-          <Select placeholder="Select option">
-            <option value="option1">Linear</option>
-            <option value="option2">Curve</option>
-            <option value="option3">Log</option>
+          <Select value={sound.shape||soundShape.Log} onChange={e => onChangeHandler("shape", e.target.value)}>
+            {Object.entries(soundShape).map(([key, val]) => (
+              <option value={val}>{key}</option>
+            ))}
           </Select>
 
           <Divider borderWidth="2px" />
-        </VStack>
-      </Box>
-    </HeadedScrollablePanel>
+    </>
   );
 };
 
+type ImageArray = number[];
 interface ImageEditorProps {
-  values: number[],
-  onChange: (val: number[]) => void
+  values: ImageArray,
+  onChange: (val: ImageArray) => void
 }
 
 const ImageEditor: FC<ImageEditorProps> = ({ values, onChange }) => {
@@ -508,7 +420,7 @@ const ImageEditor: FC<ImageEditorProps> = ({ values, onChange }) => {
 
 export default InteractionArea;
 
-function image2values(arg: string) {
+function image2array(arg: string): ImageArray {
   if (arg.startsWith("Image.")) {
     // Image variable is used
     switch (arg) {
@@ -525,3 +437,53 @@ function image2values(arg: string) {
   }
 }
 
+const soundWaveforms = {
+  Square: "WAVEFORM_SQUARE",
+  Sine: "WAVEFORM_SINE",
+  Triangle: "WAVEFORM_TRIANGLE",
+  Sawtooth: "WAVEFORM_SAWTOOTH",
+  Noise: "WAVEFORM_NOISE"
+}
+
+const soundFx = {
+  Vibrato: "FX_VIBRATO",
+  Tremolo: "FX_TREMOLO",
+  Warble: "FX_WARBLE",
+  None: "FX_NONE"
+}
+
+const soundShape = {
+  Linear: "SHAPE_LINEAR",
+  Curve: "SHAPE_CURVE",
+  Log: "SHAPE_LOG"
+}
+
+interface Sound {
+  freq_start?: number,
+  freq_end?: number,
+  duration?: number,
+  vol_start?: number,
+  vol_end?: number,
+  waveform?: string,
+  fx?: string,
+  shape?: string
+}
+
+function parseSound(soundStr: string): Sound {
+  const extract = (raw: string) => raw.split(".").slice(-1)[0]
+  // Fragile pattern matching, but it works for most cases
+  const soundObj = {
+
+  }
+  const firstParen = soundStr.indexOf('SoundEffect(')
+  if (firstParen === -1) return soundObj
+  const soundArgs = soundStr.slice(firstParen+'SoundEffect('.length, -1).split(",").map(e => e.trim())
+  for (let arg of soundArgs) {
+    if (arg.includes("=")) {
+      // Named parameter
+      const [key, val] = arg.split("=");
+      (soundObj as Record<string, any>)[key] = ["fx", "waveform", "shape"].includes(key) ? extract(val) : Number(val)
+    }
+  }
+  return soundObj
+}
