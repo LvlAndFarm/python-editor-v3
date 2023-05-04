@@ -85,15 +85,14 @@ export const Simulator = ({
         const sim = simulator.current;
         sim.initialize();
         for (const key in eventListeners) {
-            console.log(key)
             const listener = eventListeners[key];
-            console.log(listener)
+            if (debug) console.log(key, listener)
             listener && sim.addListener(key, listener);
         }
         return () => {
             sim.dispose();
         };
-    }, [eventListeners]);
+    }, [eventListeners, debug]);
 
     useEffect(()=>{
         simulator.current.setDisplay(displayBoard === undefined ? true : displayBoard)

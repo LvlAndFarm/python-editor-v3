@@ -34,12 +34,14 @@ interface MethodCallProps {
   lineInfo: LineInfo;
 }
 
+const previewModuleNames = ["display","music"]
+
 const MethodCallComponent: React.FC<MethodCallProps> = ({ lineInfo }) => {
   const {
-    callInfo: { name, arguments: args, moduleName },
+    callInfo: { name, arguments: args, moduleName, indent },
   } = lineInfo;
 
-  const code = ()=>{
+  const code = useCallback(()=>{
     let line = "";
     if (moduleName) line += moduleName + ".";
     line += name+"("+args.join(",")+")";
@@ -51,13 +53,14 @@ except:pass
 `
     code += line
     return code
-  }
+  }, [moduleName, name])
 
   const lineSize = "14pt";
   const buttonSize = "14pt";
   const boardSize = "50pt";
   const functions: SimulatorFunctions = {}
   const [size, setSize] = useState(buttonSize)
+  const indentTransform = `translateX(${9 * indent}pt);`
   const [transform, setTransform] = useState("translateY(25%);")
   const [displayBoard, setDisplay] = useState(false)
   const [display, setStyleDisplay] = useState("inline-block")
@@ -102,18 +105,20 @@ except:pass
     else stop()
   }
 
-  console.log(eventListeners)
+  // console.log(eventListeners)
 
   const simulator = <Simulator 
     eventListeners={eventListeners}
     size={size}
     displayBoard={displayBoard}
     functions={functions}
-    debug={true}
+    // debug={true}
   />
 
+  if (!(moduleName && previewModuleNames.indexOf(moduleName) > -1)) return <></>
+
   //return simulator;
-  return <Box display={display} transform={transform}>
+  return <Box display={display} transform={indentTransform + transform}>
     {simulator}
   </Box>
 };
@@ -127,13 +132,13 @@ function line2LineInfo(
   createPortal: PortalFactory,
   state: EditorState
 ): LineInfo | undefined {
-  // console.debug(line)
   if (line.type.name !== "ExpressionStatement") return undefined;
 
   if (line.firstChild?.type.name !== "CallExpression") return undefined;
 
   let moduleName, method;
   if (line.firstChild.firstChild?.type.name === "MemberExpression") {
+    console.log(line)
     moduleName = node2str(line.firstChild.firstChild?.firstChild!, state);
     method = node2str(line.firstChild.firstChild?.lastChild!, state);
   } else {
@@ -183,6 +188,7 @@ function line2LineInfo(
       moduleName,
       name: method,
       arguments: args,
+      indent:4,
     },
     createArgumentUpdate,
   };
@@ -311,15 +317,16 @@ export const reactWidgetExtension = (
     // We could do just this for the non-widget scenario.
     setLineInfo(lineInfo);
     if (lineInfo) {
+      const widgetSpec = {
+        block: true,
+        widget: new ExampleReactBlockWidget(
+          createPortal,
+          <MethodCallComponent lineInfo={lineInfo} />
+        ),
+        side: 1,
+      }
       ranges.push(
-        Decoration.widget({
-          block: false,
-          widget: new ExampleReactBlockWidget(
-            createPortal,
-            <MethodCallComponent lineInfo={lineInfo} />
-          ),
-          side: 1,
-        }).range(syntaxAtCursor.currentLine.to)
+        Decoration.widget(widgetSpec).range(syntaxAtCursor.currentLine.to)
       );
     }
 
