@@ -188,7 +188,8 @@ function line2LineInfo(
       moduleName,
       name: method,
       arguments: args,
-      indent:4,
+      // Counts the difference in chars between the line start and the actual statement
+      indent: line.from - state.doc.lineAt(line.from).from,
     },
     createArgumentUpdate,
   };
