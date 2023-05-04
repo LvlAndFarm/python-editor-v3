@@ -112,6 +112,10 @@ const InteractionArea = () => {
 
 const ExampleSoundInteraction = () =>  {
 
+  {/* sliders and drop down boxes for audio.SoundEffect function */ }
+
+  {/* constants below store values for which value the slider has been clicked */ }
+
   const [sliderValue1, setSliderValue1] = useState(128)
   const [sliderValue2, setSliderValue2] = useState(128)
   const [sliderValue3, setSliderValue3] = useState(2500)
@@ -133,7 +137,7 @@ const ExampleSoundInteraction = () =>  {
 
         <VStack spacing={4} align="stretch">
           <Text p={5} as="b">
-            <FormattedMessage id="Start Frequency" />
+            <FormattedMessage id="Start Frequency" />       {/* slider for freq_start parameter */ }
           </Text>
           <Box m={10}>
             <Slider
@@ -144,7 +148,7 @@ const ExampleSoundInteraction = () =>  {
               <SliderMark value={150} {...labelStyles1}>
                 0
               </SliderMark>
-              <SliderMark value={2500} {...labelStyles1}>
+              <SliderMark value={2500} {...labelStyles1}>   {/* default value of slider */ }
                 2500
               </SliderMark>
               <SliderMark value={4800} {...labelStyles1}>
@@ -171,7 +175,7 @@ const ExampleSoundInteraction = () =>  {
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
-            <FormattedMessage id="End Frequency" />
+            <FormattedMessage id="End Frequency" />         {/* slider for freq_end parameter */ }
           </Text>
           <Box m={10}>
             <Slider
@@ -182,7 +186,7 @@ const ExampleSoundInteraction = () =>  {
               <SliderMark value={150} {...labelStyles1}>
                 0
               </SliderMark>
-              <SliderMark value={2500} {...labelStyles1}>
+              <SliderMark value={2500} {...labelStyles1}>     {/* default value of slider */ }
                 2500
               </SliderMark>
               <SliderMark value={4800} {...labelStyles1}>
@@ -209,14 +213,14 @@ const ExampleSoundInteraction = () =>  {
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
-            <FormattedMessage id="Duration" />
+            <FormattedMessage id="Duration" />              {/* slider for duration parameter */ }
           </Text>
           <Box m={10}>
             <Slider aria-label='slider-ex-6' onChange={(val) => setSliderValue5(val)} min={1} max={999}>
               <SliderMark value={10} {...labelStyles1}>
                 1
               </SliderMark>
-              <SliderMark value={500} {...labelStyles1}>
+              <SliderMark value={500} {...labelStyles1}>    {/* default value of slider */ }
                 500
               </SliderMark>
               <SliderMark value={960} {...labelStyles1}>
@@ -243,7 +247,7 @@ const ExampleSoundInteraction = () =>  {
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
-            <FormattedMessage id="Start Volume" />
+            <FormattedMessage id="Start Volume" />          {/* slider for vol_start parameter */ }
           </Text>
           <Box m={10}>
             <Slider
@@ -254,7 +258,7 @@ const ExampleSoundInteraction = () =>  {
               <SliderMark value={10} {...labelStyles1}>
                 0
               </SliderMark>
-              <SliderMark value={128} {...labelStyles1}>
+              <SliderMark value={128} {...labelStyles1}>    {/* default value of slider */ }
                 128
               </SliderMark>
               <SliderMark value={245} {...labelStyles1}>
@@ -281,7 +285,7 @@ const ExampleSoundInteraction = () =>  {
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
-            <FormattedMessage id="End Volume" />
+            <FormattedMessage id="End Volume" />            {/* slider for vol_end parameter */ }
           </Text>
           <Box m={10}>
             <Slider
@@ -292,7 +296,7 @@ const ExampleSoundInteraction = () =>  {
               <SliderMark value={10} {...labelStyles1}>
                 0
               </SliderMark>
-              <SliderMark value={128} {...labelStyles1}>
+              <SliderMark value={128} {...labelStyles1}>    {/* default value of slider */ }
                 128
               </SliderMark>
               <SliderMark value={245} {...labelStyles1}>
@@ -319,7 +323,7 @@ const ExampleSoundInteraction = () =>  {
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
-            <FormattedMessage id="Waveform" />
+            <FormattedMessage id="Waveform" />              {/* dropbox for waveform parameter */ }
           </Text>
           <Select placeholder="Select option">
             <option value="option1">Sine</option>
@@ -332,7 +336,7 @@ const ExampleSoundInteraction = () =>  {
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
-            <FormattedMessage id="Effect" />
+            <FormattedMessage id="Effect" />                 {/* dropbox for fx parameter */ }
           </Text>
           <Select placeholder="None">
             <option value="option1">Tremolo</option>
@@ -343,7 +347,7 @@ const ExampleSoundInteraction = () =>  {
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
-            <FormattedMessage id="Shape" />
+            <FormattedMessage id="Shape" />                 {/* dropbox for shape parameter */ }
           </Text>
           <Select placeholder="Select option">
             <option value="option1">Linear</option>
@@ -360,8 +364,12 @@ const ExampleSoundInteraction = () =>  {
 
 export const ExampleGraphicsInteraction = () => {
 
+  {/* 5x5 grid simulating pixels for display.show(Image()) function */ }
+
+  {/* constants below store of menu button clicks for each 5x5 menu button */ }
   const [selectedValues, setSelectedValues] = useState<Array<number | null>>(Array(25).fill(0));
 
+  {/* updates values of menu button clicks */ }
   const handleMenuClick = (index: number, value: number) => {
     setSelectedValues(prevValues => {
       const newValues = [...prevValues];
@@ -370,10 +378,12 @@ export const ExampleGraphicsInteraction = () => {
     });
   };
 
+  {/* sets all menu button values to 0 */ }
   const handleReset = () => {
     setSelectedValues(Array(25).fill(0));
   };
 
+  {/* maps each number from 0 to 9 to corresponding shades of red (0 black to 9 bright red) */ }
   const colorSchemeMap: { [key: number]: string } = {
     0: "black",
     1: "#330000",
@@ -387,6 +397,7 @@ export const ExampleGraphicsInteraction = () => {
     9: "#ff0000",
   };
 
+  {/* converts the menu button click to a hex code colour using colorSchemeMap */ }
   const getColor = (i: number) => {
     const value = selectedValues[i];
     if (value !== null) {
@@ -395,6 +406,7 @@ export const ExampleGraphicsInteraction = () => {
     return "black";
   };
 
+  {/* generates the 5x5 menu button grid, surrounded by a box and with a reset button */ }
   function pixelGrid(){
     const pixelValues = [];
     for (let i = 0; i < 25; i++){
