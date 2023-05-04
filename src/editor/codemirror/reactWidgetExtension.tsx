@@ -60,8 +60,8 @@ except:pass
   const boardSize = "50pt";
   const functions: SimulatorFunctions = {}
   const [size, setSize] = useState(buttonSize)
-  const indentTransform = `translateX(${9 * indent}pt);`
-  const [transform, setTransform] = useState("translateY(25%);")
+  const indentTransform = `translateX(${9 * indent}pt)`
+  const [transform, setTransform] = useState("translateY(25%)")
   const [displayBoard, setDisplay] = useState(false)
   const [display, setStyleDisplay] = useState("inline-block")
 
@@ -70,7 +70,7 @@ except:pass
   const buttonLayout = () => {
     setDisplay(false);
     setSize(buttonSize);
-    setTransform("translateY(25%);");
+    setTransform("translateY(25%)");
     setStyleDisplay("inline-block");
   }
 
@@ -118,7 +118,7 @@ except:pass
   if (!(moduleName && previewModuleNames.indexOf(moduleName) > -1)) return <></>
 
   //return simulator;
-  return <Box display={display} transform={indentTransform + transform}>
+  return <Box display={display} transform={indentTransform + transform} top="25%" position="relative">
     {simulator}
   </Box>
 };
