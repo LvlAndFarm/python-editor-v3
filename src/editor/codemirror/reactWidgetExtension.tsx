@@ -1,4 +1,3 @@
-import { HStack, Text } from "@chakra-ui/react";
 import { EVENT_REQUEST_FLASH } from "../../device/simulator";
 import { EVENT_SERIAL_DATA } from "../../device/device";
 import { syntaxTree } from "@codemirror/language";
@@ -15,25 +14,21 @@ import {
   WidgetType,
 } from "@codemirror/view";
 import { SyntaxNode } from "@lezer/common";
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useCallback } from "react";
 import { PortalFactory } from "./CodeMirror";
 import { LineInfo } from "./LineInfoContext";
 import "./reactWidgetExtension.css";
 import { Simulator, SimulatorFunctions } from "../../simulator/MiniSimulator"
-import {
-  AspectRatio,
-  Box,
-  LayoutProps
-} from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 
 /**
- * An example react component that we use inside a CodeMirror widget as
- * a proof of concept.
+ * A mini-simulator as a preview of the selected line of code
  */
 interface MethodCallProps {
   lineInfo: LineInfo;
 }
 
+// only display the simulator for the following modules
 const previewModuleNames = ["display","music","speech","audio"]
 
 const MethodCallComponent: React.FC<MethodCallProps> = ({ lineInfo }) => {
@@ -41,11 +36,13 @@ const MethodCallComponent: React.FC<MethodCallProps> = ({ lineInfo }) => {
     callInfo: { name, arguments: args, moduleName, indent },
   } = lineInfo;
 
+  // Try to generate the complete programme
   const code = useCallback(()=>{
     let line = "";
     if (moduleName) line += moduleName + ".";
     line += name+"("+args.join(",")+")";
     let code = "from microbit import *\n";
+    // If extra module is specified, try to import it
     if (moduleName) code +=`
 try:
   import ${moduleName}
@@ -53,77 +50,80 @@ except:pass
 `
     code += line
     return code
-  }, [moduleName, name])
+  }, [moduleName, name, args])
 
-  const lineSize = "14pt";
+  // The different layouts of the widget
   const buttonSize = "14pt";
   const boardSize = "50pt";
-  const functions: SimulatorFunctions = {}
   const [size, setSize] = useState(buttonSize)
-  const indentTransform = `translateX(${9 * indent}pt)`
-  const [transform, setTransform] = useState("translateY(25%)")
-  const [displayBoard, setDisplay] = useState(false)
-  const [display, setStyleDisplay] = useState("inline-block")
-
-  const eventListeners : Record<string, (data: any) => any> = {}
 
   const buttonLayout = () => {
     setDisplay(false);
     setSize(buttonSize);
-    setTransform("translateY(25%)");
     setStyleDisplay("inline-block");
   }
 
   const boardLayout = () => {
     setDisplay(true);
     setSize(boardSize);
-    setTransform("");
     setStyleDisplay("");
   }
 
-  let start = useRef(0);
+  // Indent of the widget
+  const indentTransform = `translateX(${9 * indent}pt)`
+
+  // Initial state of the simulator
+  const [displayBoard, setDisplay] = useState(false)
+  const [display, setStyleDisplay] = useState("inline-block")
+  
+  // The functions to flash or stop the simulator
+  const functions: SimulatorFunctions = {}
+
+  // Event listeners on the simulator
+  const eventListeners : Record<string, (data: any) => any> = {}
+
+  // The start timestamp to be modified when flash
+  const start = useRef(0);
 
   eventListeners[EVENT_REQUEST_FLASH] = () => {
-    const flash = functions.flash
-    if (flash === undefined) {
+    if (functions.flash === undefined) {
       throw new Error("Minisimulator not correctly setup!")
     }
     if (moduleName === "display") boardLayout()
     start.current = Date.now()
-    flash && flash(code())
+    functions.flash(code())
   }
 
   const stop = () => {
-    const simulatorStop = functions.stop
-    if (simulatorStop === undefined) {
+    if (functions.stop === undefined) {
       throw new Error("Minisimulator not correctly setup!")
     }
     if (moduleName === "display") buttonLayout()
-    simulatorStop()
+    functions.stop()
   }
 
+  // When the execution has finished
   eventListeners[EVENT_SERIAL_DATA] = (data: any) => {
+
+    // Ignore the other outputs
     if (!(data === ">>> ")) return
+
+    // When it shows the board
     const delay = 2000 - (Date.now() - start.current)
     if (moduleName === "display") setTimeout(stop, delay)
     else stop()
   }
 
-  // console.log(eventListeners)
-
-  const simulator = <Simulator 
-    eventListeners={eventListeners}
-    size={size}
-    displayBoard={displayBoard}
-    functions={functions}
-    // debug={true}
-  />
-
+  // Place the if argument here because of React restrictions
   if (!(moduleName && previewModuleNames.indexOf(moduleName) > -1)) return <></>
 
-  //return simulator;
-  return <Box display={display} transform={indentTransform + transform} top="25%" position="relative">
-    {simulator}
+  return <Box display={display} transform={indentTransform} position="relative">
+    <Simulator 
+      eventListeners={eventListeners}
+      size={size}
+      displayBoard={displayBoard}
+      functions={functions}
+    />
   </Box>
 };
 

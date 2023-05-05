@@ -1,26 +1,33 @@
-import { useEffect, useRef, MutableRefObject, useCallback } from "react";
+/* 
+ * A mini-simulator that behaves slightly different than the original one, with simpler interfaces
+ * currently used by the code editor for preview of a single line of code
+ * by the Oxford student group 10
+*/
+
+import { useEffect, useRef, useCallback } from "react";
 import {
   AspectRatio,
   Box,
   LayoutProps
 } from "@chakra-ui/react";
-import { SimulatorDeviceConnection, EVENT_STATE_CHANGE, EVENT_REQUEST_FLASH } from "../device/simulator";
+import { SimulatorDeviceConnection } from "../device/simulator";
 import { useLogging } from "../logging/logging-hooks";
 import { MAIN_FILE } from "../fs/fs"
 
+// Custom simulator page for now, will be updated later
 const simulatorURL = "https://olivercwy.github.io/microbit-simulator-build/simulator.html"
-// const simulatorURL = "http://localhost:8000/simulator.html"
 
+// The functions for interaction with the mini-simulator
 export interface SimulatorFunctions {
     flash?: (code: string) => Promise<void>,
     stop?: () => Promise<void>
 }
 
 interface SimulatorProps {
-    size: LayoutProps["width"],
-    debug?: boolean,
-    displayBoard?: boolean,
-    eventListeners?: Record<string, (data: any) => any>,
+    size: LayoutProps["width"],                             // size of the component
+    debug?: boolean,                                        // whether to log debugging information
+    displayBoard?: boolean,                                 // whether to display the simulator board
+    eventListeners?: Record<string, (data: any) => any>,    // custom event listeners
     functions?: SimulatorFunctions
 }
 
@@ -41,7 +48,7 @@ export const Simulator = ({
     );
 
     const flash = useCallback((code: string) => {
-        if (debug) console.log(code);
+        if (debug) console.debug(code);
         const iframe = ref.current;
         if (!iframe) {
             throw new Error("Missing simulator iframe.");
@@ -96,7 +103,7 @@ export const Simulator = ({
 
     useEffect(()=>{
         simulator.current.setDisplay(displayBoard === undefined ? true : displayBoard)
-    },[displayBoard, simulator.current])
+    },[displayBoard])
 
     return (
         <Box width={size} height={size} overflow="hidden">
