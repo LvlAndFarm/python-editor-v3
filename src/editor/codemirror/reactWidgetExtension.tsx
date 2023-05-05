@@ -238,9 +238,6 @@ export const reactWidgetExtension = (
     // })
 
     const nodeHighlight = Decoration.mark({
-      attributes: {
-        style: "background: green;",
-      },
       class: "current-line",
     });
 
@@ -283,7 +280,12 @@ export const reactWidgetExtension = (
     },
     update(widgets, transaction) {
       // if (transaction.docChanged) {
-      return decorate(transaction.state);
+      try {
+        return decorate(transaction.state);
+      } catch (error) {
+        console.error(error)
+        return Decoration.set([])
+      }
       // }
       // return widgets.map(transaction.changes);
     },
