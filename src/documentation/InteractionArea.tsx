@@ -350,6 +350,7 @@ const ImageEditor: FC<ImageEditorProps> = ({ values, onChange }) => {
     return "black";
   };
 
+  {/* 5x5 grid simulating pixels for display.show(Image()) function */ }
   function pixelGrid(){
     const pixelValues = [];
     for (let i = 0; i < 25; i++){
