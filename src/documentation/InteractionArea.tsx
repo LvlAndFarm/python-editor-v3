@@ -398,7 +398,18 @@ function image2array(arg: string): ImageArray {
     // Image variable is used
     switch (arg) {
       case "Image.HEART":
-        return [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4]
+        return [0,9,0,9,0,
+          9,9,9,9,9,
+          9,9,9,9,9,
+          0,9,9,9,0,
+          0,0,9,0,0]
+
+      case "Image.HAPPY":
+        return [0,0,0,0,0,
+          0,9,0,9,0,
+          0,0,0,0,0,
+          9,0,0,0,9,
+          0,9,9,9,0]
     
       default:
         return Array(25).fill(0)
