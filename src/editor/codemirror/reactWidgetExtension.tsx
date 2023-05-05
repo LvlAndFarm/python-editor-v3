@@ -34,7 +34,7 @@ interface MethodCallProps {
   lineInfo: LineInfo;
 }
 
-const previewModuleNames = ["display","music"]
+const previewModuleNames = ["display","music","speech","audio"]
 
 const MethodCallComponent: React.FC<MethodCallProps> = ({ lineInfo }) => {
   const {
