@@ -81,12 +81,15 @@ except:pass
     setStyleDisplay("");
   }
 
+  let start = useRef(0);
+
   eventListeners[EVENT_REQUEST_FLASH] = () => {
     const flash = functions.flash
     if (flash === undefined) {
       throw new Error("Minisimulator not correctly setup!")
     }
     if (moduleName === "display") boardLayout()
+    start.current = Date.now()
     flash && flash(code())
   }
 
@@ -101,7 +104,8 @@ except:pass
 
   eventListeners[EVENT_SERIAL_DATA] = (data: any) => {
     if (!(data === ">>> ")) return
-    if (moduleName === "display" && name === "show") setTimeout(stop, 1000)
+    const delay = 2000 - (Date.now() - start.current)
+    if (moduleName === "display") setTimeout(stop, delay)
     else stop()
   }
 

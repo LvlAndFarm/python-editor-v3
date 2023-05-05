@@ -113,5 +113,4 @@ export const Simulator = ({
             </AspectRatio>
         </Box>
     );
-
 }
