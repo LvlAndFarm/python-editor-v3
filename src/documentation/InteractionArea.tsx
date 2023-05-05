@@ -25,13 +25,13 @@ import {
   VStack,
   Input,
 } from "@chakra-ui/react";
-import React, { FC, useState } from "react";
+import React, { FC } from "react";
 import { FormattedMessage } from "react-intl";
 import { useLineInfo } from "../editor/codemirror/LineInfoContext";
 import HeadedScrollablePanel from "./../common/HeadedScrollablePanel";
 import { useActiveEditorActions } from "../editor/active-editor-hooks";
-import { inferTypeinfoFromArgs, ParameterType, TypedFunctionSignature, typeshedInfo, TypeshedInfo } from "../editor/TypeshedTable";
-// console.warn(typeshedInfo)
+import { inferTypeinfoFromArgs, ParameterType, TypedFunctionSignature, typeshedInfo } from "../editor/TypeshedTable";
+import { ImageMap } from "../editor/codemirror/code-sharing/imageMaps";
 
 const labelStyles1 = {
   mt: "2",
@@ -213,14 +213,6 @@ const VarSlider: FC<VarSliderProps> = ({min, max, value, defaultVal, onChange}) 
 }
 
 const SoundEditor: FC<SoundEditorProps> = ({sound, onChange}) =>  {
-
-  const labelStyles1 = {
-    mt: "2",
-    ml: "-2.5",
-    fontSize: "sm",
-  };
-
-
   // We've passed in the sound object and mutate it before we call notify
   const onChangeHandler = (param: string, value: any) => {
     // We know that param must be part of the sound object as we've hardcoded the fields
@@ -350,7 +342,7 @@ const ImageEditor: FC<ImageEditorProps> = ({ values, onChange }) => {
     return "black";
   };
 
-  {/* 5x5 grid simulating pixels for display.show(Image()) function */ }
+  /* 5x5 grid simulating pixels for display.show(Image()) function */
   function pixelGrid(){
     const pixelValues = [];
     for (let i = 0; i < 25; i++){
@@ -396,24 +388,10 @@ export default InteractionArea;
 function image2array(arg: string): ImageArray {
   if (arg.startsWith("Image.")) {
     // Image variable is used
-    switch (arg) {
-      case "Image.HEART":
-        return [0,9,0,9,0,
-          9,9,9,9,9,
-          9,9,9,9,9,
-          0,9,9,9,0,
-          0,0,9,0,0]
-
-      case "Image.HAPPY":
-        return [0,0,0,0,0,
-          0,9,0,9,0,
-          0,0,0,0,0,
-          9,0,0,0,9,
-          0,9,9,9,0]
-    
-      default:
-        return Array(25).fill(0)
+    if (ImageMap[arg.slice("Image.".length).toLowerCase()]) {
+      return [...ImageMap[arg.slice("Image.".length).toLowerCase()]]
     }
+    return Array(25).fill(0)
   } else {
     // A string of numbers is used instead
     console.log(arg.slice(7,-2).split(":").flatMap(arr => arr.split('')).map(Number))
