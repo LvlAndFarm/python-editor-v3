@@ -48,7 +48,7 @@ import { languageServer } from "./language-server/view";
 import { lintGutter } from "./lint/lint";
 import { codeStructure } from "./structure-highlighting";
 import themeExtensions from "./themeExtensions";
-import { reactWidgetExtension } from "./reactWidgetExtension";
+import { codeSharingExtension } from "./codeSharingExtension";
 import { useLineInfo } from "./LineInfoContext";
 
 interface CodeMirrorProps {
@@ -151,7 +151,7 @@ const CodeMirror = ({
         extensions: [
           notify,
           editorConfig,
-          reactWidgetExtension(portalFactory, setLineInfo),
+          codeSharingExtension(portalFactory, setLineInfo),
           // Extension requires external state.
           dndSupport({ sessionSettings, setSessionSettings }),
           // Extensions only relevant for editing:

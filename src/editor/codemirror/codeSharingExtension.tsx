@@ -16,7 +16,7 @@ import { SyntaxNode } from "@lezer/common";
 import React, { useRef, useState, useEffect } from "react";
 import { PortalFactory } from "./CodeMirror";
 import { LineInfo } from "./LineInfoContext";
-import "./reactWidgetExtension.css";
+import "./codeSharingExtension.css";
 import { Simulator, flashType } from "../../simulator/MiniSimulator"
 
 /**
@@ -174,7 +174,7 @@ class ExampleReactBlockWidget extends WidgetType {
 /**
  * A toy extension that creates a wiget after the first line.
  */
-export const reactWidgetExtension = (
+export const codeSharingExtension = (
   createPortal: PortalFactory,
   // Publishes information on the current line to React context
   setLineInfo: (lineInfo: LineInfo | undefined) => void
