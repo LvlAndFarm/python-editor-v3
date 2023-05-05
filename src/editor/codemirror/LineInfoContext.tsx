@@ -7,6 +7,7 @@ export interface LineInfo {
     moduleName?: string;
     name: string;
     arguments: string[];
+    indent: number;
   };
 
   createArgumentUpdate: (args: string[]) => Transaction;
