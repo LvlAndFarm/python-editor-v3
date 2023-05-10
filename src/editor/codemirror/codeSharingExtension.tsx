@@ -17,7 +17,7 @@ import { SyntaxNode } from "@lezer/common";
 import React, { useRef, useState, useCallback } from "react";
 import { PortalFactory } from "./CodeMirror";
 import { LineInfo } from "./LineInfoContext";
-import "./reactWidgetExtension.css";
+import "./codeSharingExtension.css";
 import { Simulator, SimulatorFunctions } from "../../simulator/MiniSimulator"
 import { Box } from "@chakra-ui/react";
 
@@ -131,6 +131,15 @@ function node2str(node: SyntaxNode, state: EditorState) {
   return state.sliceDoc(node.from, node.to);
 }
 
+/**
+ * Given a SyntaxNode representing the current line, try to parse the statement if it is a function call.
+ * This might not work properly with assignments at the moment
+ * TODO: Implement assignment of function call support
+ * @param line Node that refers to the outermost span (statement) of this line
+ * @param createPortal React-provided function
+ * @param state CodeMirror editor state
+ * @returns LineInfo | undefined
+ */
 function line2LineInfo(
   line: SyntaxNode,
   createPortal: PortalFactory,
@@ -141,6 +150,7 @@ function line2LineInfo(
   if (line.firstChild?.type.name !== "CallExpression") return undefined;
 
   let moduleName, method;
+  // If the function name contains a member access, then it must be part of a module
   if (line.firstChild.firstChild?.type.name === "MemberExpression") {
     console.log(line)
     moduleName = node2str(line.firstChild.firstChild?.firstChild!, state);
@@ -149,7 +159,7 @@ function line2LineInfo(
     moduleName = undefined;
     method = node2str(line.firstChild.firstChild!, state);
   }
-
+  
   const argList = line.firstChild.lastChild;
   let arg = argList?.firstChild;
   let args = [];
@@ -234,7 +244,7 @@ class ExampleReactBlockWidget extends WidgetType {
 /**
  * A toy extension that creates a wiget after the first line.
  */
-export const reactWidgetExtension = (
+export const codeSharingExtension = (
   createPortal: PortalFactory,
   // Publishes information on the current line to React context
   setLineInfo: (lineInfo: LineInfo | undefined) => void
@@ -298,9 +308,6 @@ export const reactWidgetExtension = (
     // })
 
     const nodeHighlight = Decoration.mark({
-      attributes: {
-        style: "background: green;",
-      },
       class: "current-line",
     });
 
@@ -344,7 +351,12 @@ export const reactWidgetExtension = (
     },
     update(widgets, transaction) {
       // if (transaction.docChanged) {
-      return decorate(transaction.state);
+      try {
+        return decorate(transaction.state);
+      } catch (error) {
+        console.error(error)
+        return Decoration.set([])
+      }
       // }
       // return widgets.map(transaction.changes);
     },

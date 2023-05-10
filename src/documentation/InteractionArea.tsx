@@ -23,12 +23,16 @@ import {
   SliderThumb,
   SliderTrack,
   VStack,
+  Input,
+  Checkbox,
 } from "@chakra-ui/react";
-import React, { useState } from "react";
+import React, { FC } from "react";
 import { FormattedMessage } from "react-intl";
 import { useLineInfo } from "../editor/codemirror/LineInfoContext";
 import HeadedScrollablePanel from "./../common/HeadedScrollablePanel";
 import { useActiveEditorActions } from "../editor/active-editor-hooks";
+import { inferTypeinfoFromArgs, ParameterType, TypedFunctionSignature, typeshedInfo } from "../editor/TypeshedTable";
+import { ImageMap } from "../editor/codemirror/code-sharing/imageMaps";
 
 const labelStyles1 = {
   mt: "2",
@@ -43,6 +47,48 @@ const InteractionArea = () => {
 
   if (lineInfo?.statementType !== "CALL") return null;
 
+  let typeInfo: TypedFunctionSignature|undefined = undefined;
+
+  const qualifiedName = lineInfo.callInfo.moduleName ? 
+    `${lineInfo.callInfo.moduleName}.${lineInfo.callInfo.name}` :
+     lineInfo.callInfo.name;
+  const typeshedId = `stdlib.builtins.${qualifiedName}`
+  const typeshedMicrobitId = `stdlib.microbit.${qualifiedName}`;
+
+  if (typeshedInfo[typeshedId]) {
+    typeInfo = typeshedInfo[typeshedId]
+  } else if (typeshedInfo[typeshedMicrobitId]) {
+    typeInfo = typeshedInfo[typeshedMicrobitId]
+  }
+
+  if (typeInfo === undefined) {
+    console.log("Inferred type info from arguments instead")
+    typeInfo = {
+      name: qualifiedName,
+      parameters: inferTypeinfoFromArgs(lineInfo.callInfo.arguments),
+      returnType: "any"
+    }
+  }
+
+  const onChangeHandler = (i: number) => (val: any) => {
+    const argCopy = [...lineInfo.callInfo!.arguments];
+    argCopy[i] = val.toString();
+    // let types = typeInfo?.parameters[i];
+    for (let j = 0; j<i; j++) {
+      if (!argCopy[j]) {
+        if (typeInfo?.parameters[j].type === ParameterType.String) {
+          argCopy[j] = `"${typeInfo?.parameters[j].defaultValue}"`
+        } else {
+          argCopy[j] = typeInfo?.parameters[j].defaultValue
+        }
+      }
+    }
+    activeEditorActions?.dispatchTransaction(
+      lineInfo.createArgumentUpdate(argCopy)
+    );
+  }
+
+  
   // const firstArgNum = parseInt(lineInfo.callInfo?.arguments[0]!)
 
   return (
@@ -51,282 +97,196 @@ const InteractionArea = () => {
         <Heading>Interaction</Heading>
 
         <Divider borderWidth="2px" />
+        <Text p={5} as="b">
+          Function: {qualifiedName}
+        </Text>
 
         <VStack spacing={4} align="stretch">
-          {lineInfo.callInfo?.arguments.map((arg, i) => (
-            <React.Fragment key={i}>
-              <Text p={5} as="b">
-                <FormattedMessage id="Start Frequency" />
-              </Text>
-              <Box m={10}>
-                <Slider
-                  focusThumbOnChange={false}
-                  aria-label="slider-ex-6"
-                  onChange={(val) => {
-                    const argCopy = [...lineInfo.callInfo!.arguments];
-                    argCopy[i] = val.toString();
-                    activeEditorActions?.dispatchTransaction(
-                      lineInfo.createArgumentUpdate(argCopy)
-                    );
-                  }}
-                  value={parseInt(arg!)}
-                  max={5000}
-                >
-                  <SliderMark value={150} {...labelStyles1}>
-                    0
-                  </SliderMark>
-                  <SliderMark value={2500} {...labelStyles1}>
-                    2500
-                  </SliderMark>
-                  <SliderMark value={4800} {...labelStyles1}>
-                    5000
-                  </SliderMark>
-                  <SliderMark
-                    value={parseInt(arg!)}
-                    textAlign="center"
-                    bg="blue.500"
-                    color="white"
-                    mt="-10"
-                    ml="-5"
-                    w="12"
-                  >
-                    {parseInt(arg!)}
-                  </SliderMark>
-                  <SliderTrack>
-                    <SliderFilledTrack />
-                  </SliderTrack>
-                  <SliderThumb />
-                </Slider>
-              </Box>
+          {typeInfo?.parameters.map((param, i) => {
+            const arg = lineInfo.callInfo?.arguments?.[i]||"";
+            switch (typeInfo?.parameters[i].type) {
+              case "int":
+              case "float":
+                return (
+                  <React.Fragment key={i}>
+                    <Text p={5} as="b">
+                      <FormattedMessage
+                        id={typeInfo?.parameters[i].parameterName}
+                      />
+                    </Text>
+                    <VarSlider min={typeInfo?.parameters[i].range?.[0]||0} 
+                               max={typeInfo?.parameters[i].range?.[1]||5000}
+                               value={parseInt(lineInfo.callInfo?.arguments[i]!)}
+                               defaultVal={typeInfo?.parameters[i].defaultValue||2500}
+                               onChange={onChangeHandler(i)} />
 
-              <Divider borderWidth="2px" />
-            </React.Fragment>
-          ))}
+                    <Divider borderWidth="2px" />
+                  </React.Fragment>
+                );
+
+              case ParameterType.Image:
+                return <ImageEditor values={image2array(arg)} onChange={(val) => {
+                  // We receive an array of ints, which we convert back to string form
+                  const imgString = `Image("${val.slice(0,5).join("")}:${val.slice(5,10).join("")}:${val.slice(10,15).join("")}`
+                  + `:${val.slice(15,20).join("")}:${val.slice(20,25).join("")}")`
+                  onChangeHandler(i)(imgString)
+                }}/>
+
+              case ParameterType.SoundEffect:
+                return <SoundEditor sound={parseSound(arg)} onChange={sound => {
+                  // Construct the argument list as named parameters to prevent ambiguity
+                  const argString = Object.entries(sound).map(([key, value]) => {
+                    // We need to qualify these enum values just in case they're not in scope
+                    if (["fx", "shape", "waveform"].includes(key)) {
+                      return `${key}=audio.SoundEffect.${value}`
+                    } else {
+                      return `${key}=${value}`
+                    }
+                  }).join(", ")
+                  // SoundEffect is also qualified for the same reason above
+                  onChangeHandler(i)(`audio.SoundEffect(${argString})`)
+                }}/>
+
+              case ParameterType.Boolean:
+                return <Checkbox defaultChecked={param.defaultValue === "True"} checked={arg&&arg.length>0 ? arg=="True" : undefined}
+                                onChange={(e) => {
+                                  onChangeHandler(i)(e.target.checked ? "True" : "False");
+                                }}>{typeInfo?.parameters[i].parameterName}</Checkbox>
+            
+              default:
+                return (
+                  <React.Fragment key={i}>
+                    <Text p={5} pb={0} as="b">
+                      <FormattedMessage
+                        id={typeInfo?.parameters[i].parameterName}
+                      />
+                    </Text>
+                    <Input
+                      value={arg}
+                      onChange={(e) => {
+                        onChangeHandler(i)(e.target.value);
+                      }}
+                    />
+
+                    <Divider borderWidth="2px" />
+                  </React.Fragment>
+                );
+            }
+          })}
         </VStack>
       </Box>
     </HeadedScrollablePanel>
   );
-
-  return ExampleSoundInteraction();
 };
 
-const ExampleSoundInteraction = () =>  {
+interface SoundEditorProps {
+  sound: Sound,
+  onChange: (sound: Sound) => void
+}
 
-  const [sliderValue1, setSliderValue1] = useState(128)
-  const [sliderValue2, setSliderValue2] = useState(128)
-  const [sliderValue3, setSliderValue3] = useState(2500)
-  const [sliderValue4, setSliderValue4] = useState(2500)
-  const [sliderValue5, setSliderValue5] = useState(500)
+interface VarSliderProps {
+  min: number,
+  max: number,
+  value?: number,
+  defaultVal: number,
+  onChange: (value: number) => void
+}
+const VarSlider: FC<VarSliderProps> = ({min, max, value, defaultVal, onChange}) => {
+  // Future work: Improve a11y (aria-label)
+  return (
+    <Box m={10}>
+    <Slider
+      aria-label="variable-slider"
+      onChange={onChange}
+      value={value||defaultVal}
+      max={max}
+    >
+      <SliderMark value={min} {...labelStyles1}>
+        {min}
+      </SliderMark>
+      <SliderMark value={Math.round((min+max)/2)} {...labelStyles1}>
+         {Math.round((min+max)/2)}
+      </SliderMark>
+      <SliderMark value={max} {...labelStyles1}>
+        {max}
+      </SliderMark>
+      <SliderMark
+        value={value||defaultVal}
+        textAlign="center"
+        bg="blue.500"
+        color="white"
+        mt="-10"
+        ml="-5"
+        w="12"
+      >
+        {value||defaultVal}
+      </SliderMark>
+      <SliderTrack>
+        <SliderFilledTrack />
+      </SliderTrack>
+      <SliderThumb />
+    </Slider>
+  </Box>
+  )
+}
 
-  const labelStyles1 = {
-    mt: "2",
-    ml: "-2.5",
-    fontSize: "sm",
-  };
+const SoundEditor: FC<SoundEditorProps> = ({sound, onChange}) =>  {
+  // We've passed in the sound object and mutate it before we call notify
+  const onChangeHandler = (param: string, value: any) => {
+    // We know that param must be part of the sound object as we've hardcoded the fields
+    (sound as Record<string, any>)[param] = value;
+    onChange(sound)
+  }
 
   return (
-    <HeadedScrollablePanel>
-      <Box m={7}>
-        <Heading>Interaction</Heading>
-
-        <Divider borderWidth="2px" />
-
-        <VStack spacing={4} align="stretch">
+    <>
           <Text p={5} as="b">
             <FormattedMessage id="Start Frequency" />
           </Text>
-          <Box m={10}>
-            <Slider
-              aria-label="slider-ex-6"
-              onChange={(val) => setSliderValue3(val)}
-              max={5000}
-            >
-              <SliderMark value={150} {...labelStyles1}>
-                0
-              </SliderMark>
-              <SliderMark value={2500} {...labelStyles1}>
-                2500
-              </SliderMark>
-              <SliderMark value={4800} {...labelStyles1}>
-                5000
-              </SliderMark>
-              <SliderMark
-                value={sliderValue3}
-                textAlign="center"
-                bg="blue.500"
-                color="white"
-                mt="-10"
-                ml="-5"
-                w="12"
-              >
-                {sliderValue3}
-              </SliderMark>
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </Box>
+          <VarSlider min={0} max={9999} value={sound.freq_start} defaultVal={5000}
+            onChange={val => onChangeHandler("freq_start", val)} />
 
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
             <FormattedMessage id="End Frequency" />
           </Text>
-          <Box m={10}>
-            <Slider
-              aria-label="slider-ex-6"
-              onChange={(val) => setSliderValue4(val)}
-              max={5000}
-            >
-              <SliderMark value={150} {...labelStyles1}>
-                0
-              </SliderMark>
-              <SliderMark value={2500} {...labelStyles1}>
-                2500
-              </SliderMark>
-              <SliderMark value={4800} {...labelStyles1}>
-                5000
-              </SliderMark>
-              <SliderMark
-                value={sliderValue4}
-                textAlign="center"
-                bg="blue.500"
-                color="white"
-                mt="-10"
-                ml="-5"
-                w="12"
-              >
-                {sliderValue4}
-              </SliderMark>
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </Box>
+          <VarSlider min={0} max={9999} value={sound.freq_end} defaultVal={5000}
+            onChange={val => onChangeHandler("freq_end", val)} />
 
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
             <FormattedMessage id="Duration" />
           </Text>
-          <Box m={10}>
-            <Slider aria-label='slider-ex-6' onChange={(val) => setSliderValue5(val)} min={1} max={999}>
-              <SliderMark value={10} {...labelStyles1}>
-                1
-              </SliderMark>
-              <SliderMark value={500} {...labelStyles1}>
-                500
-              </SliderMark>
-              <SliderMark value={960} {...labelStyles1}>
-                999
-              </SliderMark>
-              <SliderMark
-                value={sliderValue5}
-                textAlign='center'
-                bg='blue.500'
-                color='white'
-                mt='-10'
-                ml='-5'
-                w='12'
-              >
-                {sliderValue5}
-              </SliderMark>
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </Box>
+          <VarSlider min={0} max={9999} value={sound.duration} defaultVal={5000}
+            onChange={val => onChangeHandler("duration", val)} />
 
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
             <FormattedMessage id="Start Volume" />
           </Text>
-          <Box m={10}>
-            <Slider
-              aria-label="slider-ex-6"
-              onChange={(val) => setSliderValue1(val)}
-              max={255}
-            >
-              <SliderMark value={10} {...labelStyles1}>
-                0
-              </SliderMark>
-              <SliderMark value={128} {...labelStyles1}>
-                128
-              </SliderMark>
-              <SliderMark value={245} {...labelStyles1}>
-                255
-              </SliderMark>
-              <SliderMark
-                value={sliderValue1}
-                textAlign="center"
-                bg="blue.500"
-                color="white"
-                mt="-10"
-                ml="-5"
-                w="12"
-              >
-                {sliderValue1}
-              </SliderMark>
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </Box>
+          <VarSlider min={0} max={255} value={sound.vol_start} defaultVal={255}
+            onChange={val => onChangeHandler("vol_start", val)} />
 
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
             <FormattedMessage id="End Volume" />
           </Text>
-          <Box m={10}>
-            <Slider
-              aria-label="slider-ex-6"
-              onChange={(val) => setSliderValue2(val)}
-              max={255}
-            >
-              <SliderMark value={10} {...labelStyles1}>
-                0
-              </SliderMark>
-              <SliderMark value={128} {...labelStyles1}>
-                128
-              </SliderMark>
-              <SliderMark value={245} {...labelStyles1}>
-                255
-              </SliderMark>
-              <SliderMark
-                value={sliderValue2}
-                textAlign="center"
-                bg="blue.500"
-                color="white"
-                mt="-10"
-                ml="-5"
-                w="12"
-              >
-                {sliderValue2}
-              </SliderMark>
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </Box>
+          <VarSlider min={0} max={255} value={sound.vol_end} defaultVal={255}
+            onChange={val => onChangeHandler("vol_end", val)} />
 
           <Divider borderWidth="2px" />
 
           <Text p={5} as="b">
             <FormattedMessage id="Waveform" />
           </Text>
-          <Select placeholder="Select option">
-            <option value="option1">Sine</option>
-            <option value="option2">Sawtooth</option>
-            <option value="option3">Triangle</option>
-            <option value="option4">Square</option>
-            <option value="option5">Noise</option>
+          <Select value={sound.waveform||soundWaveforms.Square} onChange={e => onChangeHandler("waveform", e.target.value)}>
+            {Object.entries(soundWaveforms).map(([key, val]) => (
+              <option value={val}>{key}</option>
+            ))}
           </Select>
 
           <Divider borderWidth="2px" />
@@ -334,10 +294,10 @@ const ExampleSoundInteraction = () =>  {
           <Text p={5} as="b">
             <FormattedMessage id="Effect" />
           </Text>
-          <Select placeholder="None">
-            <option value="option1">Tremolo</option>
-            <option value="option2">Vibrato</option>
-            <option value="option3">Warble</option>
+          <Select value={sound.fx||soundFx.None} onChange={e => onChangeHandler("fx", e.target.value)}>
+            {Object.entries(soundFx).map(([key, val]) => (
+              <option value={val}>{key}</option>
+            ))}
           </Select>
 
           <Divider borderWidth="2px" />
@@ -345,40 +305,81 @@ const ExampleSoundInteraction = () =>  {
           <Text p={5} as="b">
             <FormattedMessage id="Shape" />
           </Text>
-          <Select placeholder="Select option">
-            <option value="option1">Linear</option>
-            <option value="option2">Curve</option>
-            <option value="option3">Log</option>
+          <Select value={sound.shape||soundShape.Log} onChange={e => onChangeHandler("shape", e.target.value)}>
+            {Object.entries(soundShape).map(([key, val]) => (
+              <option value={val}>{key}</option>
+            ))}
           </Select>
 
           <Divider borderWidth="2px" />
-        </VStack>
-      </Box>
-    </HeadedScrollablePanel>
+    </>
   );
 };
 
-export const ExampleGraphicsInteraction = () => {
+type ImageArray = number[];
+interface ImageEditorProps {
+  values: ImageArray,
+  onChange: (val: ImageArray) => void
+}
 
+const ImageEditor: FC<ImageEditorProps> = ({ values, onChange }) => {
+
+  // const [selectedValues, setSelectedValues] = useState<Array<number>>(values);
+
+  const handleMenuClick = (index: number, value: number) => {
+    // setSelectedValues(prevValues => {
+      // const newValues = [...values];
+      values[index] = value;
+      onChange(values)
+    // });
+  };
+
+  const handleReset = () => {
+    // setSelectedValues(Array(25).fill(0));
+    onChange(Array(25).fill(0))
+  };
+
+  const colorSchemeMap: { [key: number]: string } = {
+    0: "black",
+    1: "#330000",
+    2: "#4d0000",
+    3: "#660000",
+    4: "#800000",
+    5: "#990000",
+    6: "#b30000",
+    7: "#cc0000",
+    8: "#e60000",
+    9: "#ff0000",
+  };
+
+  const getColor = (i: number) => {
+    const value = values[i];
+    if (value !== null) {
+      return colorSchemeMap[value];
+    }
+    return "black";
+  };
+
+  /* 5x5 grid simulating pixels for display.show(Image()) function */
   function pixelGrid(){
-    const pixelValues = new Array(25);
+    const pixelValues = [];
     for (let i = 0; i < 25; i++){
       pixelValues.push(
         <GridItem w='100%' h='10'>
         <Center><Menu>
-          <MenuButton as={Button} size='sm' bg='red'>
+          <MenuButton as={Button} size='sm' bg={getColor(i)}>
           </MenuButton>
           <MenuList>
-            <MenuItem>0</MenuItem>
-            <MenuItem>1</MenuItem>
-            <MenuItem>2</MenuItem>
-            <MenuItem>3</MenuItem>
-            <MenuItem>4</MenuItem>
-            <MenuItem>5</MenuItem>
-            <MenuItem>6</MenuItem>
-            <MenuItem>7</MenuItem>
-            <MenuItem>8</MenuItem>
-            <MenuItem>9</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 0)}>0</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 1)}>1</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 2)}>2</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 3)}>3</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 4)}>4</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 5)}>5</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 6)}>6</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 7)}>7</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 8)}>8</MenuItem>
+            <MenuItem onClick={() => handleMenuClick(i, 9)}>9</MenuItem>
           </MenuList>
         </Menu></Center>
         </GridItem>
@@ -389,44 +390,80 @@ export const ExampleGraphicsInteraction = () => {
         <SimpleGrid gap={1} p={5} columns={5}>
           {pixelValues}
         </SimpleGrid>
+        <Box mt={4}>
+            <Center><Button onClick={handleReset} bg='white'>Reset</Button></Center>
+          </Box>
       </Box>
     )
   }
 
-  const colorSchemeMap = {
-    0: "black",
-    1: "red.900",
-    2: "red.850",
-    3: "red.800",
-    4: "red.750",
-    5: "red.700",
-    6: "red.650",
-    7: "red.600",
-    8: "red.550",
-    9: "red.500",
-  };
-
-  //const colorScheme = colorSchemeMap[value] || "gray"
-
   
-  return (
-    <HeadedScrollablePanel>
-      <Box m={7}>
-        <VStack spacing={4} align="stretch">
-          <Text p={5} as="b">
-            <FormattedMessage id="Pixels" />
-          </Text>
-
-        <Text p={5} as='b'>
-          <FormattedMessage id="Pixels" />
-        </Text>
-
-        {pixelGrid()}
-
-      </VStack>
-    </Box>
-  </HeadedScrollablePanel>
-  )
+  return pixelGrid()
 }
 
 export default InteractionArea;
+
+function image2array(arg: string): ImageArray {
+  if (arg.startsWith("Image.")) {
+    // Image variable is used
+    if (ImageMap[arg.slice("Image.".length).toLowerCase()]) {
+      return [...ImageMap[arg.slice("Image.".length).toLowerCase()]]
+    }
+    return Array(25).fill(0)
+  } else {
+    // A string of numbers is used instead
+    console.log(arg.slice(7,-2).split(":").flatMap(arr => arr.split('')).map(Number))
+    return arg.slice(7,-2).split(":").flatMap(arr => arr.split('').map(Number))
+  }
+}
+
+const soundWaveforms = {
+  Square: "WAVEFORM_SQUARE",
+  Sine: "WAVEFORM_SINE",
+  Triangle: "WAVEFORM_TRIANGLE",
+  Sawtooth: "WAVEFORM_SAWTOOTH",
+  Noise: "WAVEFORM_NOISE"
+}
+
+const soundFx = {
+  Vibrato: "FX_VIBRATO",
+  Tremolo: "FX_TREMOLO",
+  Warble: "FX_WARBLE",
+  None: "FX_NONE"
+}
+
+const soundShape = {
+  Linear: "SHAPE_LINEAR",
+  Curve: "SHAPE_CURVE",
+  Log: "SHAPE_LOG"
+}
+
+interface Sound {
+  freq_start?: number,
+  freq_end?: number,
+  duration?: number,
+  vol_start?: number,
+  vol_end?: number,
+  waveform?: string,
+  fx?: string,
+  shape?: string
+}
+
+function parseSound(soundStr: string): Sound {
+  const extract = (raw: string) => raw.split(".").slice(-1)[0]
+  // Fragile pattern matching, but it works for most cases
+  const soundObj = {
+
+  }
+  const firstParen = soundStr.indexOf('SoundEffect(')
+  if (firstParen === -1) return soundObj
+  const soundArgs = soundStr.slice(firstParen+'SoundEffect('.length, -1).split(",").map(e => e.trim())
+  for (let arg of soundArgs) {
+    if (arg.includes("=")) {
+      // Named parameter
+      const [key, val] = arg.split("=");
+      (soundObj as Record<string, any>)[key] = ["fx", "waveform", "shape"].includes(key) ? extract(val) : Number(val)
+    }
+  }
+  return soundObj
+}
