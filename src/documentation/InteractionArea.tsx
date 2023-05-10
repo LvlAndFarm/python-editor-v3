@@ -24,6 +24,7 @@ import {
   SliderTrack,
   VStack,
   Input,
+  Checkbox,
 } from "@chakra-ui/react";
 import React, { FC } from "react";
 import { FormattedMessage } from "react-intl";
@@ -72,6 +73,16 @@ const InteractionArea = () => {
   const onChangeHandler = (i: number) => (val: any) => {
     const argCopy = [...lineInfo.callInfo!.arguments];
     argCopy[i] = val.toString();
+    // let types = typeInfo?.parameters[i];
+    for (let j = 0; j<i; j++) {
+      if (!argCopy[j]) {
+        if (typeInfo?.parameters[j].type === ParameterType.String) {
+          argCopy[j] = `"${typeInfo?.parameters[j].defaultValue}"`
+        } else {
+          argCopy[j] = typeInfo?.parameters[j].defaultValue
+        }
+      }
+    }
     activeEditorActions?.dispatchTransaction(
       lineInfo.createArgumentUpdate(argCopy)
     );
@@ -135,6 +146,12 @@ const InteractionArea = () => {
                   // SoundEffect is also qualified for the same reason above
                   onChangeHandler(i)(`audio.SoundEffect(${argString})`)
                 }}/>
+
+              case ParameterType.Boolean:
+                return <Checkbox defaultChecked={param.defaultValue === "True"} checked={arg&&arg.length>0 ? arg=="True" : undefined}
+                                onChange={(e) => {
+                                  onChangeHandler(i)(e.target.checked ? "True" : "False");
+                                }}>{typeInfo?.parameters[i].parameterName}</Checkbox>
             
               default:
                 return (
