@@ -91,7 +91,8 @@ const InteractionArea = () => {
         </Text>
 
         <VStack spacing={4} align="stretch">
-          {lineInfo.callInfo?.arguments.map((arg, i) => {
+          {typeInfo?.parameters.map((param, i) => {
+            const arg = lineInfo.callInfo?.arguments?.[i]||"";
             switch (typeInfo?.parameters[i].type) {
               case "int":
               case "float":
@@ -104,7 +105,7 @@ const InteractionArea = () => {
                     </Text>
                     <VarSlider min={typeInfo?.parameters[i].range?.[0]||0} 
                                max={typeInfo?.parameters[i].range?.[1]||5000}
-                               value={parseInt(arg!)}
+                               value={parseInt(lineInfo.callInfo?.arguments[i]!)}
                                defaultVal={typeInfo?.parameters[i].defaultValue||2500}
                                onChange={onChangeHandler(i)} />
 
